@@ -27,6 +27,9 @@ jobs:
           dotnet tool install --global dotnet-ef --version "10.*"
           echo "$HOME/.dotnet/tools" >> "$GITHUB_PATH"
 
+      - name: Restore
+        run: dotnet restore TransLog.slnx
+
       - name: Add migration
         env:
           NAME: ${{ inputs.name }}
