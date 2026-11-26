@@ -1,0 +1,29 @@
+@page
+@model AuditModel
+@{
+    ViewData["Title"] = "Audit log";
+}
+
+<section class="tl-section">
+    <div class="container">
+        <h1 class="tl-h2 mb-4">Audit log</h1>
+        <p class="text-body-secondary">The latest 200 admin actions and password changes, newest first.</p>
+        <div class="table-responsive">
+            <table class="table table-sm align-middle">
+                <thead><tr><th>When</th><th>Who</th><th>Company</th><th>Action</th><th>Details</th></tr></thead>
+                <tbody>
+                    @foreach (var e in Model.Entries)
+                    {
+                        <tr>
+                            <td class="text-nowrap">@AppCulture.ToSast(e.CreatedAt).ToString("yyyy-MM-dd HH:mm")</td>
+                            <td>@e.UserName</td>
+                            <td>@e.Company</td>
+                            <td>@e.Action</td>
+                            <td class="small">@e.Details</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</section>

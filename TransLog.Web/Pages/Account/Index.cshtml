@@ -1,0 +1,30 @@
+@page
+@model TransLog.Web.Pages.Account.IndexModel
+@{
+    ViewData["Title"] = "My account";
+}
+
+<section class="tl-section">
+    <div class="container" style="max-width: 560px">
+        <h1 class="tl-h2 mb-4">My account</h1>
+
+        @if (TempData["Message"] is string message)
+        {
+            <div class="alert alert-success">@message</div>
+        }
+
+        <div class="tl-card mb-4">
+            <dl class="row mb-0">
+                <dt class="col-4">Name</dt><dd class="col-8">@Model.Me.FullName</dd>
+                <dt class="col-4">Email</dt><dd class="col-8">@Model.Me.Email</dd>
+                <dt class="col-4">Role</dt><dd class="col-8">@string.Join(", ", Model.MyRoles)</dd>
+                @if (Model.CompanyName is not null)
+                {
+                    <dt class="col-4">Company</dt><dd class="col-8 mb-0">@Model.CompanyName</dd>
+                }
+            </dl>
+        </div>
+
+        <a class="btn btn-tl" asp-page="/Account/ChangePassword">Change password</a>
+    </div>
+</section>

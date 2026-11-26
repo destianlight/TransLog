@@ -1,0 +1,45 @@
+# Create this file on GitHub as:  .github/workflows/test.yml
+# Runs the automated tests against a real SQL Server that exists only during the run.
+
+name: Test
+
+on:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    services:
+      sql:
+        image: mcr.microsoft.com/mssql/server:2022-latest
+        env:
+          ACCEPT_EULA: "Y"
+          MSSQL_SA_PASSWORD: "Test-Passw0rd!"
+        ports:
+          - 1433:1433
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Wait for SQL Server
+        run: |
+          for i in $(seq 1 30); do
+            for tool in /opt/mssql-tools18/bin/sqlcmd /opt/mssql-tools/bin/sqlcmd; do
+              if docker exec ${{ job.services.sql.id }} $tool -S localhost -U sa -P 'Test-Passw0rd!' -C -Q "SELECT 1" >/dev/null 2>&1; then
+                echo "SQL Server is ready."; exit 0
+              fi
+            done
+            echo "Waiting ($i)..."; sleep 5
+          done
+          echo "::error::SQL Server did not start."; exit 1
+
+      - name: Test
+        run: dotnet test TransLog.slnx --configuration Release --logger "console;verbosity=normal"
+        env:
+          TEST_SQL_SERVER: localhost,1433
+          TEST_SQL_PASSWORD: Test-Passw0rd!

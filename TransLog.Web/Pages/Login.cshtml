@@ -1,0 +1,40 @@
+@page
+@model LoginModel
+@{
+    ViewData["Title"] = "Log in";
+}
+
+<section class="tl-section">
+    <div class="container" style="max-width: 440px">
+        <h1 class="tl-h2 mb-4">Log in</h1>
+
+        @if (Model.Error is not null)
+        {
+            <div class="alert alert-danger">@Model.Error</div>
+        }
+
+        <form method="post" class="tl-card">
+            <input type="hidden" asp-for="ReturnUrl" />
+            <div class="mb-3">
+                <label asp-for="Email" class="form-label">Email</label>
+                <input asp-for="Email" class="form-control" autocomplete="username" autofocus />
+                <span asp-validation-for="Email" class="text-danger small"></span>
+            </div>
+            <div class="mb-3">
+                <label asp-for="Password" class="form-label">Password</label>
+                <input asp-for="Password" class="form-control" autocomplete="current-password" />
+                <span asp-validation-for="Password" class="text-danger small"></span>
+            </div>
+            <div class="form-check mb-4">
+                <input asp-for="RememberMe" class="form-check-input" />
+                <label asp-for="RememberMe" class="form-check-label">Keep me logged in on this phone</label>
+            </div>
+            <button type="submit" class="btn btn-tl w-100">Log in</button>
+        </form>
+
+        <p class="small text-body-secondary mt-4">
+            Forgot your password? Ask your company's owner, or message TransLog on
+            <a href="@Contact.WhatsAppLink(Configuration)" target="_blank" rel="noopener">WhatsApp</a>.
+        </p>
+    </div>
+</section>

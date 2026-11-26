@@ -6,7 +6,7 @@ ASP.NET Core 10 Razor Pages · SQL Server · Bootstrap 5.3.9 (self-hosted) · Si
 
 ## Status
 
-Skeleton: landing page only. Part 1 (company registration and login) is next.
+Part 1: login, the SysAdmin area (companies, users, TransLog admins, audit log) and an Owner home page. Companies do not self-register in version 1: Register opens WhatsApp.
 
 ## Build
 
@@ -20,6 +20,38 @@ Builds only run when requested: **Actions** tab > **Build** > **Run workflow**. 
 Workflows cannot change files in `.github/workflows/`; those are pasted by hand on GitHub. Visible copies are kept in `github-setup/` because folders starting with a dot are hidden on Android. Apply zip never deletes files; files to remove are listed with each part.
 
 Run locally (needs the .NET 10 SDK): `dotnet run --project TransLog.Web`
+
+## Workflows (Actions tab)
+
+| Workflow | What it does |
+| --- | --- |
+| Apply zip | Unzips the uploaded zip over the repo, commits, starts Build |
+| Build | Compiles and publishes the site (download under Artifacts) |
+| Add migration | Creates a database migration after a data model change, commits it, starts Test |
+| Test | Runs the automated tests against a temporary SQL Server |
+
+## Server settings (never in the repository)
+
+On the host, create `TransLog.Web/appsettings.Production.json` next to the site files once:
+
+```json
+{
+  "ConnectionStrings": { "Default": "Server=...;Database=...;User Id=...;Password=...;TrustServerCertificate=True" },
+  "SysAdmin": { "Email": "you@example.com", "Password": "change-me", "FullName": "Your Name" }
+}
+```
+
+The first system admin is created from `SysAdmin` at startup when none exists; after that those values are ignored.
+
+## Areas
+
+| Folder | Address | Who |
+| --- | --- | --- |
+| `Pages/` | `/`, `/login`, `/account` | Everyone |
+| `Areas/SysAdmin/` | `/sysadmin` | TransLog staff |
+| `Areas/Company/` | `/company` | A company's Owner and Admin |
+
+Passwords: at least 6 characters, no other rules. Five wrong tries lock the account for 5 minutes.
 
 ## Layout
 

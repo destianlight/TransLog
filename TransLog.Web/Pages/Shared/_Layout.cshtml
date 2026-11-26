@@ -14,6 +14,8 @@
         })();
     </script>
     @{
+        var signedIn = User.Identity?.IsAuthenticated == true;
+        var whatsApp = Contact.WhatsAppLink(Configuration);
         var siteUrl = $"{Context.Request.Scheme}://{Context.Request.Host}";
         var pageTitle = ViewData["Title"] is string pt ? $"{pt} – TransLog" : "TransLog";
         var pageDescription = ViewData["Description"] as string
@@ -49,7 +51,7 @@
     <header class="tl-header">
         <nav class="navbar navbar-expand-md" aria-label="Main">
             <div class="container">
-                <a class="navbar-brand tl-brand" asp-page="/Index">
+                <a class="navbar-brand tl-brand" asp-area="" asp-page="/Index">
                     <svg class="tl-mark" aria-hidden="true"><use href="/resources/icons.svg#tl-mark"></use></svg>
                     <span>Trans<span class="tl-accent">Log</span></span>
                 </a>
@@ -59,12 +61,33 @@
                 </button>
                 <div class="collapse navbar-collapse" id="mainNav">
                     <ul class="navbar-nav ms-auto align-items-md-center gap-md-2">
-                        <li class="nav-item"><a class="nav-link" href="/#how">How it works</a></li>
-                        <li class="nav-item"><a class="nav-link" href="/#types">What you can capture</a></li>
-                        <li class="nav-item"><a class="nav-link" href="/#features">Features</a></li>
-                        @* Log in and Register become real pages in Part 1. *@
-                        <li class="nav-item"><a class="nav-link fw-semibold" href="#">Log in</a></li>
-                        <li class="nav-item"><a class="btn btn-tl ms-md-2" href="#">Register company</a></li>
+                        @if (signedIn)
+                        {
+                            if (User.IsInRole(Roles.SysAdmin))
+                            {
+                                <li class="nav-item"><a class="nav-link" asp-area="SysAdmin" asp-page="/Index">Companies</a></li>
+                                <li class="nav-item"><a class="nav-link" asp-area="SysAdmin" asp-page="/Admins">TransLog admins</a></li>
+                                <li class="nav-item"><a class="nav-link" asp-area="SysAdmin" asp-page="/Audit">Audit log</a></li>
+                            }
+                            else if (User.IsInRole(Roles.Owner) || User.IsInRole(Roles.Admin))
+                            {
+                                <li class="nav-item"><a class="nav-link" asp-area="Company" asp-page="/Index">Home</a></li>
+                            }
+                            <li class="nav-item"><a class="nav-link fw-semibold" asp-area="" asp-page="/Account/Index">@User.GetFullName()</a></li>
+                            <li class="nav-item">
+                                <form method="post" asp-area="" asp-page="/Logout" class="d-inline">
+                                    <button type="submit" class="btn btn-outline-secondary btn-sm ms-md-2">Log out</button>
+                                </form>
+                            </li>
+                        }
+                        else
+                        {
+                            <li class="nav-item"><a class="nav-link" href="/#how">How it works</a></li>
+                            <li class="nav-item"><a class="nav-link" href="/#types">What you can capture</a></li>
+                            <li class="nav-item"><a class="nav-link" href="/#features">Features</a></li>
+                            <li class="nav-item"><a class="nav-link fw-semibold" asp-area="" asp-page="/Login">Log in</a></li>
+                            <li class="nav-item"><a class="btn btn-tl ms-md-2" href="@whatsApp" target="_blank" rel="noopener">Register on WhatsApp</a></li>
+                        }
                     </ul>
                 </div>
             </div>
@@ -81,7 +104,7 @@
             <div class="d-flex flex-wrap gap-4">
                 <a href="#">Privacy (POPIA)</a>
                 <a href="#">Terms</a>
-                <a href="#">Contact</a>
+                <a href="@whatsApp" target="_blank" rel="noopener">WhatsApp @Contact.WhatsAppDisplay(Configuration)</a>
             </div>
         </div>
     </footer>

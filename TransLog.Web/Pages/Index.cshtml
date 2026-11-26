@@ -2,6 +2,7 @@
 @model IndexModel
 @{
     ViewData["Title"] = "Fleet slip capture";
+    var whatsApp = Contact.WhatsAppLink(Configuration);
 }
 
 <section class="tl-hero">
@@ -12,10 +13,10 @@
                 <h1 class="tl-display">Fuel slips, weighbridge tickets and odometers, <span class="tl-accent">captured from one photo</span></h1>
                 <p class="lead text-body-secondary my-4">Your drivers take a picture. AI reads the litres, weights and readings. You check, approve and get cost per km for every truck.</p>
                 <div class="d-flex flex-wrap gap-2">
-                    <a class="btn btn-tl btn-lg" href="#">Register your company</a>
+                    <a class="btn btn-tl btn-lg" href="@whatsApp" target="_blank" rel="noopener">Register on WhatsApp</a>
                     <a class="btn btn-outline-secondary btn-lg" href="#how">See how it works</a>
                 </div>
-                <p class="small text-body-secondary mt-3 mb-0">Works in the phone's browser. No app to install.</p>
+                <p class="small text-body-secondary mt-3 mb-0">Works in the phone's browser. No app to install. Message us on WhatsApp at @Contact.WhatsAppDisplay(Configuration) and we set up your company.</p>
             </div>
 
             <div class="col-lg-6 d-flex justify-content-center">
@@ -157,9 +158,9 @@
         <div class="tl-cta">
             <div>
                 <h2 class="tl-h2 text-white mb-2">Stop typing slips into spreadsheets.</h2>
-                <p class="mb-0">Register your company and add your first truck in a few minutes.</p>
+                <p class="mb-0">Send us a WhatsApp and we set up your company the same day.</p>
             </div>
-            <a class="btn btn-tl btn-lg" href="#">Register your company</a>
+            <a class="btn btn-tl btn-lg" href="@whatsApp" target="_blank" rel="noopener">Register on WhatsApp</a>
         </div>
     </div>
 </section>

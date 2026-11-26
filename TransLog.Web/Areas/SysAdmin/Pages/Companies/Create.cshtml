@@ -1,0 +1,45 @@
+@page
+@model TransLog.Web.Areas.SysAdmin.Pages.Companies.CreateModel
+@{
+    ViewData["Title"] = "New company";
+}
+
+<section class="tl-section">
+    <div class="container" style="max-width: 720px">
+        <h1 class="tl-h2 mb-4">New company</h1>
+
+        <form method="post">
+            <div asp-validation-summary="ModelOnly" class="alert alert-danger small" role="alert"></div>
+
+            <div class="tl-card mb-4">
+                <h2 class="h5 mb-3">Company</h2>
+                <partial name="_CompanyFields" for="Form" />
+            </div>
+
+            <div class="tl-card mb-4">
+                <h2 class="h5 mb-3">Owner</h2>
+                <p class="small text-body-secondary">The owner logs in with this email and password. Send them the password yourself, for example on WhatsApp.</p>
+                <div class="mb-3">
+                    <label asp-for="Owner.FullName" class="form-label">Full name</label>
+                    <input asp-for="Owner.FullName" class="form-control" />
+                    <span asp-validation-for="Owner.FullName" class="text-danger small"></span>
+                </div>
+                <div class="mb-3">
+                    <label asp-for="Owner.Email" class="form-label">Email (used to log in)</label>
+                    <input asp-for="Owner.Email" class="form-control" type="email" autocomplete="off" />
+                    <span asp-validation-for="Owner.Email" class="text-danger small"></span>
+                </div>
+                <div class="mb-0">
+                    <label asp-for="Owner.Password" class="form-label">Password (at least 6 characters)</label>
+                    <input asp-for="Owner.Password" class="form-control" type="text" autocomplete="off" />
+                    <span asp-validation-for="Owner.Password" class="text-danger small"></span>
+                </div>
+            </div>
+
+            <div class="d-flex gap-2">
+                <button type="submit" class="btn btn-tl">Create company</button>
+                <a class="btn btn-outline-secondary" asp-page="/Index">Cancel</a>
+            </div>
+        </form>
+    </div>
+</section>

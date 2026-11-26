@@ -1,0 +1,40 @@
+@page
+@model TransLog.Web.Areas.SysAdmin.Pages.Users.CreateModel
+@{
+    ViewData["Title"] = Model.CompanyName is null ? "New TransLog admin" : $"New user for {Model.CompanyName}";
+}
+
+<section class="tl-section">
+    <div class="container" style="max-width: 560px">
+        <h1 class="tl-h2 mb-4">@ViewData["Title"]</h1>
+
+        <form method="post" class="tl-card">
+            <input type="hidden" asp-for="CompanyId" />
+            <div asp-validation-summary="ModelOnly" class="alert alert-danger small" role="alert"></div>
+            <div class="mb-3">
+                <label asp-for="Form.FullName" class="form-label">Full name</label>
+                <input asp-for="Form.FullName" class="form-control" />
+                <span asp-validation-for="Form.FullName" class="text-danger small"></span>
+            </div>
+            <div class="mb-3">
+                <label asp-for="Form.Email" class="form-label">Email (used to log in)</label>
+                <input asp-for="Form.Email" class="form-control" type="email" autocomplete="off" />
+                <span asp-validation-for="Form.Email" class="text-danger small"></span>
+            </div>
+            <div class="mb-3">
+                <label asp-for="Form.Password" class="form-label">Password (at least 6 characters)</label>
+                <input asp-for="Form.Password" class="form-control" type="text" autocomplete="off" />
+                <span asp-validation-for="Form.Password" class="text-danger small"></span>
+            </div>
+            @if (Model.CompanyName is not null)
+            {
+                <div class="mb-4">
+                    <label asp-for="Form.Role" class="form-label">Role</label>
+                    <select asp-for="Form.Role" asp-items="Model.RoleOptions" class="form-select"></select>
+                    <span asp-validation-for="Form.Role" class="text-danger small"></span>
+                </div>
+            }
+            <button type="submit" class="btn btn-tl">Add user</button>
+        </form>
+    </div>
+</section>

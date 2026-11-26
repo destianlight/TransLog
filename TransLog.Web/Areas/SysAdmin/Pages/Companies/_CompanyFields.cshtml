@@ -1,0 +1,29 @@
+@model CompanyForm
+<div class="mb-3">
+    <label asp-for="Name" class="form-label">Company name</label>
+    <input asp-for="Name" class="form-control" />
+    <span asp-validation-for="Name" class="text-danger small"></span>
+</div>
+<div class="row g-3 mb-3">
+    <div class="col-sm-6">
+        <label asp-for="RegistrationNo" class="form-label">Registration number</label>
+        <input asp-for="RegistrationNo" class="form-control" />
+    </div>
+    <div class="col-sm-6">
+        <label asp-for="VatNo" class="form-label">VAT number</label>
+        <input asp-for="VatNo" class="form-control" />
+    </div>
+    <div class="col-sm-6">
+        <label asp-for="Email" class="form-label">Company email</label>
+        <input asp-for="Email" class="form-control" type="email" />
+        <span asp-validation-for="Email" class="text-danger small"></span>
+    </div>
+    <div class="col-sm-6">
+        <label asp-for="Phone" class="form-label">Phone</label>
+        <input asp-for="Phone" class="form-control" type="tel" />
+    </div>
+</div>
+<div class="mb-3">
+    <label asp-for="Address" class="form-label">Address</label>
+    <textarea asp-for="Address" class="form-control" rows="2"></textarea>
+</div>

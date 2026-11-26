@@ -1,0 +1,36 @@
+@page
+@model IndexModel
+@{
+    ViewData["Title"] = Model.CompanyName;
+}
+
+<section class="tl-section">
+    <div class="container">
+        <p class="tl-eyebrow mb-1">@Model.CompanyName</p>
+        <h1 class="tl-h2 mb-4">Welcome, @User.GetFullName()</h1>
+
+        <div class="row g-3">
+            <div class="col-md-4">
+                <div class="tl-card h-100">
+                    <svg class="tl-icon" aria-hidden="true"><use href="/resources/icons.svg#person"></use></svg>
+                    <h2 class="h6 mt-2">Users</h2>
+                    <p class="small text-body-secondary mb-0">Invite your team and set their roles. Coming in Part 2.</p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="tl-card h-100">
+                    <svg class="tl-icon" aria-hidden="true"><use href="/resources/icons.svg#truck"></use></svg>
+                    <h2 class="h6 mt-2">Drivers and vehicles</h2>
+                    <p class="small text-body-secondary mb-0">Your fleet and who drives what. Coming in Part 3.</p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="tl-card h-100">
+                    <svg class="tl-icon" aria-hidden="true"><use href="/resources/icons.svg#camera"></use></svg>
+                    <h2 class="h6 mt-2">Slips</h2>
+                    <p class="small text-body-secondary mb-0">Photos read by AI, ready for you to approve. Coming in Parts 4 to 6.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
