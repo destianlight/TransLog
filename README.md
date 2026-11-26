@@ -12,7 +12,12 @@ Skeleton: landing page only. Part 1 (company registration and login) is next.
 
 Builds only run when requested: **Actions** tab > **Build** > **Run workflow**. The published site is under **Artifacts** on the run's page.
 
-The build file lives at `.github/workflows/build.yml`. A visible copy is kept in `github-setup/` because folders starting with a dot are hidden on Android.
+## Getting code in from a phone
+
+1. Upload one `.zip` to the repository root (**Add file** > **Upload files**).
+2. **Actions** > **Apply zip** > **Run workflow**. It unzips over the repository (dropping a single top folder such as `TransLog/`), deletes the zip, commits, and starts Build.
+
+Workflows cannot change files in `.github/workflows/`; those are pasted by hand on GitHub. Visible copies are kept in `github-setup/` because folders starting with a dot are hidden on Android. Apply zip never deletes files; files to remove are listed with each part.
 
 Run locally (needs the .NET 10 SDK): `dotnet run --project TransLog.Web`
 

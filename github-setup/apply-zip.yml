@@ -1,0 +1,96 @@
+# Create this file on GitHub as:  .github/workflows/apply-zip.yml
+# Use: upload ONE .zip to the repository root (Add file > Upload files),
+# then Actions > Apply zip > Run workflow.
+
+name: Apply zip
+
+on:
+  workflow_dispatch:
+    inputs:
+      message:
+        description: "Commit message (leave empty to use the zip name)"
+        required: false
+        default: ""
+      build:
+        description: "Run Build afterwards"
+        type: boolean
+        default: true
+
+permissions:
+  contents: write   # commit the unzipped files
+  actions: write    # start the Build workflow
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Find the zip
+        id: zip
+        run: |
+          shopt -s nullglob
+          zips=( *.zip )
+          if [ ${#zips[@]} -eq 0 ]; then
+            echo "::error::No .zip file in the repository root. Upload one first."
+            exit 1
+          fi
+          if [ ${#zips[@]} -gt 1 ]; then
+            echo "::error::More than one .zip in the root: ${zips[*]}. Keep only one."
+            exit 1
+          fi
+          echo "file=${zips[0]}" >> "$GITHUB_OUTPUT"
+          echo "Using ${zips[0]}"
+
+      - name: Unzip over the repository
+        env:
+          ZIP: ${{ steps.zip.outputs.file }}
+        run: |
+          work=$(mktemp -d)
+          unzip -q "$ZIP" -d "$work"
+
+          # If everything sits in one top folder (like TransLog/), use what is inside it.
+          src="$work"
+          entries=( "$work"/* "$work"/.[!.]* )
+          real=()
+          for e in "${entries[@]}"; do [ -e "$e" ] && real+=("$e"); done
+          if [ ${#real[@]} -eq 1 ] && [ -d "${real[0]}" ]; then
+            src="${real[0]}"
+          fi
+
+          # A workflow may not change workflow files; those are pasted by hand on GitHub.
+          if [ -d "$src/.github/workflows" ]; then
+            echo "::warning::Skipped .github/workflows in the zip. Paste workflow files by hand on GitHub."
+            rm -rf "$src/.github/workflows"
+          fi
+
+          echo "Files in the zip:"
+          (cd "$src" && find . -type f | sed 's#^\./#  #' | sort)
+
+          rsync -a "$src"/ ./
+          git rm -q --cached "$ZIP" 2>/dev/null || true
+          rm -f "$ZIP"
+
+      - name: Commit and push
+        env:
+          ZIP: ${{ steps.zip.outputs.file }}
+          MSG: ${{ inputs.message }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898283+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "Nothing changed."
+            exit 0
+          fi
+          git commit -q -m "${MSG:-Apply $ZIP}"
+          git push
+          echo "Changed files:"
+          git show --stat --format="" HEAD
+
+      - name: Start Build
+        if: ${{ inputs.build }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run build.yml --ref "${{ github.ref_name }}"
