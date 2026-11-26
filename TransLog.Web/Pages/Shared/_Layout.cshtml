@@ -1,3 +1,12 @@
+@* Declared before <html>: variables inside <head> or <body> are not visible outside them. *@
+@{
+    var signedIn = User.Identity?.IsAuthenticated == true;
+    var whatsApp = Contact.WhatsAppLink(Configuration);
+    var siteUrl = $"{Context.Request.Scheme}://{Context.Request.Host}";
+    var pageTitle = ViewData["Title"] is string pt ? $"{pt} – TransLog" : "TransLog";
+    var pageDescription = ViewData["Description"] as string
+        ?? "Fleet slips, captured from one photo. Drivers photograph fuel slips, weighbridge tickets and odometers; AI reads them; you approve and report.";
+}
 <!DOCTYPE html>
 <html lang="en-ZA">
 <head>
@@ -13,14 +22,6 @@
             m.addEventListener('change', set);
         })();
     </script>
-    @{
-        var signedIn = User.Identity?.IsAuthenticated == true;
-        var whatsApp = Contact.WhatsAppLink(Configuration);
-        var siteUrl = $"{Context.Request.Scheme}://{Context.Request.Host}";
-        var pageTitle = ViewData["Title"] is string pt ? $"{pt} – TransLog" : "TransLog";
-        var pageDescription = ViewData["Description"] as string
-            ?? "Fleet slips, captured from one photo. Drivers photograph fuel slips, weighbridge tickets and odometers; AI reads them; you approve and report.";
-    }
     <title>@pageTitle</title>
     <meta name="description" content="@pageDescription" />
     <meta name="theme-color" content="#0B1F3A" />
