@@ -104,6 +104,8 @@
     border-radius: 1rem;
     padding: 1.75rem;
 }
+a.tl-card-link { color: inherit; text-decoration: none; transition: border-color .15s; }
+a.tl-card-link:hover, a.tl-card-link:focus-visible { border-color: var(--tl-orange); }
 .tl-card-dark { background: var(--tl-navy); border-color: var(--tl-navy); color: #CBD5E1; }
 .tl-card-dark h3 { color: #fff; }
 .tl-card-dark .tl-icon { color: #FB923C; }

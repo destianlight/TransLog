@@ -11,7 +11,7 @@ public class GoModel : PageModel
     {
         if (User.IsInRole(Roles.SysAdmin))
             return RedirectToPage("/Index", new { area = "SysAdmin" });
-        if (User.IsInRole(Roles.Owner) || User.IsInRole(Roles.Admin))
+        if (User.GetCompanyId() is not null)
             return RedirectToPage("/Index", new { area = "Company" });
         return RedirectToPage("/Account/Index", new { area = "" });
     }

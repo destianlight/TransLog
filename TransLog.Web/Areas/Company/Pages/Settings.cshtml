@@ -1,0 +1,70 @@
+@page
+@model SettingsModel
+@{
+    ViewData["Title"] = "Company settings";
+}
+
+<section class="tl-section">
+    <div class="container" style="max-width: 640px">
+        <h1 class="tl-h2 mb-4">Company settings</h1>
+
+        @if (TempData["Message"] is string message)
+        {
+            <div class="alert alert-success">@message</div>
+        }
+
+        <form method="post" class="tl-card">
+            <div asp-validation-summary="ModelOnly" class="alert alert-danger small" role="alert"></div>
+
+            <div class="mb-3">
+                <label class="form-label" for="companyName">Company name</label>
+                <input id="companyName" class="form-control" value="@Model.CompanyName" readonly />
+                <div class="form-text">To change the name, contact TransLog on WhatsApp.</div>
+            </div>
+
+            <div class="row g-3 mb-4">
+                <div class="col-sm-6">
+                    <label asp-for="Form.RegistrationNo" class="form-label">Registration number</label>
+                    <input asp-for="Form.RegistrationNo" class="form-control" />
+                </div>
+                <div class="col-sm-6">
+                    <label asp-for="Form.VatNo" class="form-label">VAT number</label>
+                    <input asp-for="Form.VatNo" class="form-control" />
+                </div>
+                <div class="col-sm-6">
+                    <label asp-for="Form.Email" class="form-label">Company email</label>
+                    <input asp-for="Form.Email" class="form-control" type="email" />
+                    <span asp-validation-for="Form.Email" class="text-danger small"></span>
+                </div>
+                <div class="col-sm-6">
+                    <label asp-for="Form.Phone" class="form-label">Phone</label>
+                    <input asp-for="Form.Phone" class="form-control" type="tel" />
+                </div>
+                <div class="col-12">
+                    <label asp-for="Form.Address" class="form-label">Address</label>
+                    <textarea asp-for="Form.Address" class="form-control" rows="2"></textarea>
+                </div>
+            </div>
+
+            <fieldset class="mb-4">
+                <legend class="h6">Who may link drivers to vehicles?</legend>
+                <div class="form-check mb-2">
+                    <input class="form-check-input" type="radio" asp-for="Form.DriverLinking" value="@DriverLinking.DriversAndCompany" id="linkDrivers" />
+                    <label class="form-check-label" for="linkDrivers">
+                        Drivers and the company
+                        <span class="d-block small text-body-secondary">A driver picks their own vehicle from a list. You can also switch it.</span>
+                    </label>
+                </div>
+                <div class="form-check">
+                    <input class="form-check-input" type="radio" asp-for="Form.DriverLinking" value="@DriverLinking.CompanyOnly" id="linkCompany" />
+                    <label class="form-check-label" for="linkCompany">
+                        Company only
+                        <span class="d-block small text-body-secondary">Drivers cannot change their vehicle. Only the Owner or an Admin links them.</span>
+                    </label>
+                </div>
+            </fieldset>
+
+            <button type="submit" class="btn btn-tl">Save</button>
+        </form>
+    </div>
+</section>

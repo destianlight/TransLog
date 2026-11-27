@@ -61,6 +61,7 @@ public class CreateModel(AppDbContext db, UserManager<AppUser> users, AuditLogge
         await db.SaveChangesAsync();
 
         TempData["Message"] = $"{user.FullName} added. They can log in with {email}.";
+        LoginDetails.Keep(this, user.FullName, CompanyName, email, Form.Password);
         return CompanyId is int companyId
             ? RedirectToPage("/Companies/Edit", new { id = companyId })
             : RedirectToPage("/Admins");

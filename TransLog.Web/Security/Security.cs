@@ -20,12 +20,20 @@ public static class Roles
 
     /// <summary>Roles a company user can have.</summary>
     public static readonly string[] Company = [Owner, Admin, Capturer, Viewer];
+
+    /// <summary>Roles an Owner can give in the company area. Owners are managed by TransLog only.</summary>
+    public static readonly string[] OwnerCanGive = [Admin, Capturer, Viewer];
 }
 
 public static class Policies
 {
     public const string SysAdmin = "SysAdmin";
-    public const string CompanyAdmin = "CompanyAdmin";
+
+    /// <summary>Any user of a company: opens the company area.</summary>
+    public const string CompanyMember = "CompanyMember";
+
+    /// <summary>A company Owner: users, settings and activity.</summary>
+    public const string CompanyOwner = "CompanyOwner";
 }
 
 public static class AppClaims
@@ -58,6 +66,15 @@ public class AppClaimsFactory(UserManager<AppUser> users, RoleManager<AppRole> r
             identity.AddClaim(new Claim(AppClaims.CompanyId, companyId.ToString(CultureInfo.InvariantCulture)));
         return identity;
     }
+}
+
+/// <summary>
+/// The company of the logged-in user, read by the tenant filter on every database query.
+/// Null for TransLog system admins and visitors.
+/// </summary>
+public class CurrentCompany(IHttpContextAccessor http)
+{
+    public int? Id => http.HttpContext?.User.GetCompanyId();
 }
 
 /// <summary>Adds an audit entry to the context; the caller saves.</summary>

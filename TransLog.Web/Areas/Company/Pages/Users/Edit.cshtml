@@ -1,0 +1,48 @@
+@page "{id:int}"
+@model TransLog.Web.Areas.CompanyArea.Pages.Users.EditModel
+@{
+    ViewData["Title"] = Model.Form.FullName;
+}
+
+<section class="tl-section">
+    <div class="container" style="max-width: 560px">
+        <p class="mb-2"><a asp-page="Index">&larr; Users</a></p>
+        <h1 class="tl-h2 mb-4">@Model.Form.FullName</h1>
+
+        <form method="post" class="tl-card">
+            <div asp-validation-summary="ModelOnly" class="alert alert-danger small" role="alert"></div>
+            <div class="mb-3">
+                <label asp-for="Form.FullName" class="form-label">Full name</label>
+                <input asp-for="Form.FullName" class="form-control" />
+                <span asp-validation-for="Form.FullName" class="text-danger small"></span>
+            </div>
+            <div class="mb-3">
+                <label asp-for="Form.Email" class="form-label">Email (used to log in)</label>
+                <input asp-for="Form.Email" class="form-control" type="email" autocomplete="off" />
+                <span asp-validation-for="Form.Email" class="text-danger small"></span>
+            </div>
+            <div class="mb-3">
+                <label asp-for="Form.Role" class="form-label">Role</label>
+                <select asp-for="Form.Role" asp-items="Model.RoleOptions" class="form-select"></select>
+                <span asp-validation-for="Form.Role" class="text-danger small"></span>
+            </div>
+            <div class="mb-3">
+                <label asp-for="Form.NewPassword" class="form-label">New password (leave empty to keep the current one)</label>
+                <input asp-for="Form.NewPassword" class="form-control" type="text" autocomplete="off" />
+                <span asp-validation-for="Form.NewPassword" class="text-danger small"></span>
+            </div>
+            <div class="form-check form-switch mb-2">
+                <input asp-for="Form.IsActive" class="form-check-input" role="switch" />
+                <label asp-for="Form.IsActive" class="form-check-label">User is active (switch off to block their login)</label>
+            </div>
+            @if (Model.LockedOut)
+            {
+                <div class="form-check mb-2">
+                    <input asp-for="Form.Unlock" class="form-check-input" />
+                    <label asp-for="Form.Unlock" class="form-check-label">Unlock (locked after too many wrong passwords)</label>
+                </div>
+            }
+            <button type="submit" class="btn btn-tl mt-3">Save</button>
+        </form>
+    </div>
+</section>

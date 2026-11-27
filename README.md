@@ -8,6 +8,8 @@ ASP.NET Core 10 Razor Pages · SQL Server · Bootstrap 5.3.9 (self-hosted) · Si
 
 Part 1: login, the SysAdmin area (companies, users, TransLog admins, audit log) and an Owner home page. Companies do not self-register in version 1: Register opens WhatsApp.
 
+Part 2: the company Owner manages users (Admin, Capturer, Viewer) with copyable login details, company settings (contact details, who may link drivers to vehicles) and an activity log. A tenant filter keeps every company's data apart. Owners and company names are managed by TransLog.
+
 ## Build
 
 Builds only run when requested: **Actions** tab > **Build** > **Run workflow**. The published site is under **Artifacts** on the run's page.

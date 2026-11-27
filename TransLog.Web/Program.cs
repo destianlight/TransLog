@@ -68,16 +68,22 @@ builder.Services.Configure<SecurityStampValidatorOptions>(o => o.ValidationInter
 builder.Services.AddAuthorizationBuilder()
     .SetFallbackPolicy(new AuthorizationPolicyBuilder().RequireAuthenticatedUser().Build())
     .AddPolicy(Policies.SysAdmin, p => p.RequireRole(Roles.SysAdmin))
-    .AddPolicy(Policies.CompanyAdmin, p => p.RequireRole(Roles.Owner, Roles.Admin).RequireClaim(AppClaims.CompanyId));
+    .AddPolicy(Policies.CompanyMember, p => p.RequireRole(Roles.Company).RequireClaim(AppClaims.CompanyId))
+    .AddPolicy(Policies.CompanyOwner, p => p.RequireRole(Roles.Owner).RequireClaim(AppClaims.CompanyId));
 
 builder.Services.AddRazorPages(o =>
 {
     o.Conventions.AuthorizeAreaFolder("SysAdmin", "/", Policies.SysAdmin);
-    o.Conventions.AuthorizeAreaFolder("Company", "/", Policies.CompanyAdmin);
+    o.Conventions.AuthorizeAreaFolder("Company", "/", Policies.CompanyMember);
+    // Only the Owner manages users and settings (both rules apply).
+    o.Conventions.AuthorizeAreaFolder("Company", "/Users", Policies.CompanyOwner);
+    o.Conventions.AuthorizeAreaPage("Company", "/Settings", Policies.CompanyOwner);
+    o.Conventions.AuthorizeAreaPage("Company", "/Activity", Policies.CompanyOwner);
 });
 builder.Services.AddRouting(o => o.LowercaseUrls = true);
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<AuditLogger>();
+builder.Services.AddScoped<CurrentCompany>();
 
 builder.Services.Configure<RequestLocalizationOptions>(o =>
 {

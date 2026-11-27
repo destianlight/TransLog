@@ -13,7 +13,7 @@ public class AuditModel(AppDbContext db) : PageModel
     public async Task OnGetAsync()
     {
         Entries = await (
-            from a in db.AuditLogs
+            from a in db.AuditLogs.IgnoreQueryFilters() // system admins see every company
             join c in db.Companies on a.CompanyId equals c.Id into cs
             from c in cs.DefaultIfEmpty()
             orderby a.CreatedAt descending

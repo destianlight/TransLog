@@ -39,6 +39,9 @@ public class EditModel(AppDbContext db, UserManager<AppUser> users, AuditLogger 
         if (company is null)
             return NotFound();
 
+        var name = Form.Name.Trim();
+        if (await db.Companies.AnyAsync(c => c.Name == name && c.Id != id))
+            ModelState.AddModelError("Form.Name", "A company with this name already exists.");
         if (!ModelState.IsValid)
         {
             await LoadAsync(company);

@@ -10,13 +10,30 @@
         <h1 class="tl-h2 mb-4">Welcome, @User.GetFullName()</h1>
 
         <div class="row g-3">
-            <div class="col-md-4">
-                <div class="tl-card h-100">
-                    <svg class="tl-icon" aria-hidden="true"><use href="/resources/icons.svg#person"></use></svg>
-                    <h2 class="h6 mt-2">Users</h2>
-                    <p class="small text-body-secondary mb-0">Invite your team and set their roles. Coming in Part 2.</p>
+            @if (Model.IsOwner)
+            {
+                <div class="col-md-4">
+                    <a class="tl-card tl-card-link d-block h-100" asp-page="/Users/Index">
+                        <svg class="tl-icon" aria-hidden="true"><use href="/resources/icons.svg#person"></use></svg>
+                        <h2 class="h6 mt-2">Users</h2>
+                        <p class="small text-body-secondary mb-0">Add your team, set their roles, switch them on or off.</p>
+                    </a>
                 </div>
-            </div>
+                <div class="col-md-4">
+                    <a class="tl-card tl-card-link d-block h-100" asp-page="/Settings">
+                        <svg class="tl-icon" aria-hidden="true"><use href="/resources/icons.svg#speedometer2"></use></svg>
+                        <h2 class="h6 mt-2">Company settings</h2>
+                        <p class="small text-body-secondary mb-0">Contact details and who may link drivers to vehicles.</p>
+                    </a>
+                </div>
+                <div class="col-md-4">
+                    <a class="tl-card tl-card-link d-block h-100" asp-page="/Activity">
+                        <svg class="tl-icon" aria-hidden="true"><use href="/resources/icons.svg#receipt"></use></svg>
+                        <h2 class="h6 mt-2">Activity</h2>
+                        <p class="small text-body-secondary mb-0">Who changed what in your company.</p>
+                    </a>
+                </div>
+            }
             <div class="col-md-4">
                 <div class="tl-card h-100">
                     <svg class="tl-icon" aria-hidden="true"><use href="/resources/icons.svg#truck"></use></svg>

@@ -106,6 +106,8 @@ public class EditModel(AppDbContext db, UserManager<AppUser> users, AuditLogger 
         await db.SaveChangesAsync();
 
         TempData["Message"] = $"{user.FullName} saved.";
+        if (!string.IsNullOrEmpty(Form.NewPassword))
+            LoginDetails.Keep(this, user.FullName, CompanyName, email, Form.NewPassword);
         return user.CompanyId is int companyId
             ? RedirectToPage("/Companies/Edit", new { id = companyId })
             : RedirectToPage("/Admins");

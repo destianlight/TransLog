@@ -14,6 +14,8 @@
             <div class="alert alert-success">@message</div>
         }
 
+        <partial name="_LoginDetails" />
+
         <form method="post" class="tl-card mb-5">
             <div asp-validation-summary="ModelOnly" class="alert alert-danger small" role="alert"></div>
             <partial name="_CompanyFields" for="Form" />

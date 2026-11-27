@@ -26,12 +26,25 @@ public class Company
     [MaxLength(300)]
     public string? Address { get; set; }
 
+    /// <summary>Who may link a driver to a vehicle (Part 3). Set by the Owner.</summary>
+    public DriverLinking DriverLinking { get; set; } = DriverLinking.DriversAndCompany;
+
     public bool IsActive { get; set; } = true;
 
     /// <summary>UTC.</summary>
     public DateTime CreatedAt { get; set; }
 
     public List<AppUser> Users { get; set; } = [];
+}
+
+/// <summary>Who may link a driver to a vehicle. Stored as a number; never reorder.</summary>
+public enum DriverLinking
+{
+    /// <summary>A driver picks their own vehicle from a list; the Owner or Admin can also switch it.</summary>
+    DriversAndCompany = 0,
+
+    /// <summary>Only the Owner or Admin links drivers to vehicles.</summary>
+    CompanyOnly = 1,
 }
 
 /// <summary>A person who logs in. CompanyId is null for TransLog system admins.</summary>

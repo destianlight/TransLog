@@ -70,9 +70,15 @@
                                 <li class="nav-item"><a class="nav-link" asp-area="SysAdmin" asp-page="/Admins">TransLog admins</a></li>
                                 <li class="nav-item"><a class="nav-link" asp-area="SysAdmin" asp-page="/Audit">Audit log</a></li>
                             }
-                            else if (User.IsInRole(Roles.Owner) || User.IsInRole(Roles.Admin))
+                            else if (User.GetCompanyId() is not null)
                             {
                                 <li class="nav-item"><a class="nav-link" asp-area="Company" asp-page="/Index">Home</a></li>
+                                if (User.IsInRole(Roles.Owner))
+                                {
+                                    <li class="nav-item"><a class="nav-link" asp-area="Company" asp-page="/Users/Index">Users</a></li>
+                                    <li class="nav-item"><a class="nav-link" asp-area="Company" asp-page="/Settings">Settings</a></li>
+                                    <li class="nav-item"><a class="nav-link" asp-area="Company" asp-page="/Activity">Activity</a></li>
+                                }
                             }
                             <li class="nav-item"><a class="nav-link fw-semibold" asp-area="" asp-page="/Account/Index">@User.GetFullName()</a></li>
                             <li class="nav-item">

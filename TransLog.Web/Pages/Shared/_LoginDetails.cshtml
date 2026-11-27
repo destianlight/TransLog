@@ -1,0 +1,14 @@
+@* Shows login details once, with Copy and Share buttons (see site.js). Usage: <partial name="_LoginDetails" /> *@
+@if (LoginDetails.Take(TempData) is { } details)
+{
+    <div class="tl-card mb-4" data-share>
+        <h2 class="h5">Login details for @details.FullName</h2>
+        <p class="small text-body-secondary">Send these to the user. The password is shown only now and is not kept anywhere.</p>
+        <textarea class="form-control font-monospace small mb-3" rows="9" readonly aria-label="Login details" data-share-text>@details.Text</textarea>
+        <div class="d-flex flex-wrap align-items-center gap-2">
+            <button type="button" class="btn btn-tl" data-share-copy>Copy details</button>
+            <button type="button" class="btn btn-outline-secondary d-none" data-share-send>Share</button>
+            <span class="small text-success d-none" role="status" data-share-done>Copied</span>
+        </div>
+    </div>
+}

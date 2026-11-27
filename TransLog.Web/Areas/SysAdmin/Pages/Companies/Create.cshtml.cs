@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using Microsoft.EntityFrameworkCore;
 using TransLog.Web.Data;
 using TransLog.Web.Security;
 
@@ -22,6 +23,13 @@ public class CreateModel(AppDbContext db, UserManager<AppUser> users, AuditLogge
     {
         if (!ModelState.IsValid)
             return Page();
+
+        var name = Form.Name.Trim();
+        if (await db.Companies.AnyAsync(c => c.Name == name))
+        {
+            ModelState.AddModelError("Form.Name", "A company with this name already exists.");
+            return Page();
+        }
 
         var email = Owner.Email.Trim();
         if (await users.FindByEmailAsync(email) is not null)
@@ -64,6 +72,7 @@ public class CreateModel(AppDbContext db, UserManager<AppUser> users, AuditLogge
         await tx.CommitAsync();
 
         TempData["Message"] = $"{company.Name} created. {owner.FullName} can now log in with {email}.";
+        LoginDetails.Keep(this, owner.FullName, company.Name, email, Owner.Password);
         return RedirectToPage("/Companies/Edit", new { id = company.Id });
     }
 }

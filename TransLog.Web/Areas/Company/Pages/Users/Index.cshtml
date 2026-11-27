@@ -1,0 +1,67 @@
+@page
+@model TransLog.Web.Areas.CompanyArea.Pages.Users.IndexModel
+@{
+    ViewData["Title"] = "Users";
+}
+
+<section class="tl-section">
+    <div class="container" style="max-width: 860px">
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+            <h1 class="tl-h2 mb-0">Users</h1>
+            <a class="btn btn-tl" asp-page="Create">Add user</a>
+        </div>
+
+        @if (TempData["Message"] is string message)
+        {
+            <div class="alert alert-success">@message</div>
+        }
+
+        <partial name="_LoginDetails" />
+
+        <p class="text-body-secondary small">
+            Admin: manages drivers, vehicles and slips (from Part 3). Capturer: photographs slips. Viewer: sees reports only.
+            Owners are added and changed by TransLog; ask us on WhatsApp.
+        </p>
+
+        <div class="table-responsive">
+            <table class="table align-middle">
+                <thead>
+                    <tr><th>Name</th><th>Email</th><th>Role</th><th>Status</th></tr>
+                </thead>
+                <tbody>
+                    @foreach (var u in Model.Users)
+                    {
+                        <tr>
+                            <td>
+                                @if (u.Role == Roles.Owner)
+                                {
+                                    <span>@u.FullName</span>
+                                }
+                                else
+                                {
+                                    <a asp-page="Edit" asp-route-id="@u.Id">@u.FullName</a>
+                                }
+                            </td>
+                            <td>@u.Email</td>
+                            <td>@u.Role</td>
+                            <td>
+                                @if (!u.IsActive)
+                                {
+                                    <span class="badge text-bg-secondary">Off</span>
+                                }
+                                else if (u.LockedOut)
+                                {
+                                    <span class="badge text-bg-warning">Locked</span>
+                                }
+                                else
+                                {
+                                    <span class="badge text-bg-success">Active</span>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</section>
