@@ -122,7 +122,12 @@ public class Part3aTests(TestApp app) : IClassFixture<TestApp>
         var remove = await Scenario.PostToAsync(owner, $"/company/vehicles/edit/{id}",
             $"/company/vehicles/edit/{id}?handler=RemoveAlias&aliasId={aliasId}", new());
         Assert.Equal(HttpStatusCode.Redirect, remove.StatusCode);
+
+        // The "removed" message is shown once, on the edit page; read it away before checking the list.
+        var after = await (await owner.GetAsync($"/company/vehicles/edit/{id}")).Content.ReadAsStringAsync();
+        Assert.Contains("LLT587NM removed", after);
         Assert.DoesNotContain("LLT587NM", await (await owner.GetAsync("/company/vehicles")).Content.ReadAsStringAsync());
+        Assert.Equal(0, await InDbAsync(db => db.VehicleAliases.IgnoreQueryFilters().CountAsync(a => a.Alias == "LLT587NM")));
     }
 
     [Fact]
