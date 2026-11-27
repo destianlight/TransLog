@@ -66,6 +66,24 @@ public class Vehicle
         string.Join(" ", new[] { Make, Model, Variant }.Where(x => !string.IsNullOrWhiteSpace(x)));
 }
 
+/// <summary>
+/// Another way a slip prints this vehicle's registration (a misspelling, an old plate, a fleet name).
+/// Stored in the same normal form as a registration; unique within the company.
+/// </summary>
+public class VehicleAlias
+{
+    public int Id { get; set; }
+
+    public int CompanyId { get; set; }
+
+    public int VehicleId { get; set; }
+
+    public Vehicle? Vehicle { get; set; }
+
+    [MaxLength(20)]
+    public string Alias { get; set; } = "";
+}
+
 /// <summary>A driver of a company. Never deleted, only deactivated.</summary>
 public class Driver
 {
