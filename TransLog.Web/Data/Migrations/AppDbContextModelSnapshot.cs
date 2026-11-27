@@ -283,6 +283,128 @@ namespace TransLog.Web.Data.Migrations
                     b.ToTable("AuditLogs");
                 });
 
+            modelBuilder.Entity("TransLog.Web.Data.Capture", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CapturedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("CapturedByUserId")
+                        .HasColumnType("int");
+
+                    b.Property<Guid>("ClientKey")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("CompanyId")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("DriverId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("ReceivedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("VehicleId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CapturedByUserId");
+
+                    b.HasIndex("CompanyId", "CapturedAt");
+
+                    b.HasIndex("CompanyId", "ClientKey")
+                        .IsUnique();
+
+                    b.HasIndex("CompanyId", "DriverId", "CapturedAt");
+
+                    b.HasIndex("CompanyId", "VehicleId", "CapturedAt");
+
+                    b.ToTable("Captures");
+                });
+
+            modelBuilder.Entity("TransLog.Web.Data.CaptureImage", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int?>("Accuracy")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Bytes")
+                        .HasColumnType("int");
+
+                    b.Property<int>("CaptureId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("CompanyId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("FilePath")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<int>("Height")
+                        .HasColumnType("int");
+
+                    b.Property<decimal?>("Latitude")
+                        .HasPrecision(9, 6)
+                        .HasColumnType("decimal(9,6)");
+
+                    b.Property<DateTime?>("LocationTime")
+                        .HasColumnType("datetime2");
+
+                    b.Property<decimal?>("Longitude")
+                        .HasPrecision(9, 6)
+                        .HasColumnType("decimal(9,6)");
+
+                    b.Property<int?>("RotatedBy")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Rotation")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Sha256")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .IsUnicode(false)
+                        .HasColumnType("char(64)")
+                        .IsFixedLength();
+
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Source")
+                        .HasColumnType("int");
+
+                    b.Property<string>("ThumbPath")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<int>("Width")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CompanyId", "CaptureId");
+
+                    b.HasIndex("CompanyId", "Sha256");
+
+                    b.ToTable("CaptureImages");
+                });
+
             modelBuilder.Entity("TransLog.Web.Data.Company", b =>
                 {
                     b.Property<int>("Id")
@@ -619,6 +741,49 @@ namespace TransLog.Web.Data.Migrations
                     b.Navigation("Company");
                 });
 
+            modelBuilder.Entity("TransLog.Web.Data.Capture", b =>
+                {
+                    b.HasOne("TransLog.Web.Data.AppUser", null)
+                        .WithMany()
+                        .HasForeignKey("CapturedByUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("TransLog.Web.Data.Company", null)
+                        .WithMany()
+                        .HasForeignKey("CompanyId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("TransLog.Web.Data.Driver", "Driver")
+                        .WithMany()
+                        .HasForeignKey("CompanyId", "DriverId")
+                        .HasPrincipalKey("CompanyId", "Id")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("TransLog.Web.Data.Vehicle", "Vehicle")
+                        .WithMany()
+                        .HasForeignKey("CompanyId", "VehicleId")
+                        .HasPrincipalKey("CompanyId", "Id")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("Driver");
+
+                    b.Navigation("Vehicle");
+                });
+
+            modelBuilder.Entity("TransLog.Web.Data.CaptureImage", b =>
+                {
+                    b.HasOne("TransLog.Web.Data.Capture", "Capture")
+                        .WithMany("Images")
+                        .HasForeignKey("CompanyId", "CaptureId")
+                        .HasPrincipalKey("CompanyId", "Id")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Capture");
+                });
+
             modelBuilder.Entity("TransLog.Web.Data.Driver", b =>
                 {
                     b.HasOne("TransLog.Web.Data.Company", null)
@@ -685,6 +850,11 @@ namespace TransLog.Web.Data.Migrations
                         .IsRequired();
 
                     b.Navigation("Vehicle");
+                });
+
+            modelBuilder.Entity("TransLog.Web.Data.Capture", b =>
+                {
+                    b.Navigation("Images");
                 });
 
             modelBuilder.Entity("TransLog.Web.Data.Company", b =>
