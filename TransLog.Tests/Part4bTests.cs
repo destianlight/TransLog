@@ -221,6 +221,25 @@ public class Part4bTests(TestApp app) : IClassFixture<TestApp>
     }
 
     [Fact]
+    public async Task The_menu_groups_fleet_and_company_pages_by_role_and_marks_the_current_page()
+    {
+        var owner = await _s.CompanyWithOwnerAsync("Office Capture Nine", "owner@office-nine.test");
+        var viewer = await _s.AddUserAndLoginAsync(owner, "Val Viewer", "viewer@office-nine.test", "Viewer");
+
+        var home = await HtmlAsync(owner, "/company");
+        Assert.Contains("navbar-expand-lg", home);
+        Assert.Contains("href=\"/company/drivers\"", home);
+        Assert.Contains("href=\"/company/users\"", home);
+        Assert.Contains("Log out", home);
+        Assert.Contains("My account", home);
+
+        var list = await HtmlAsync(viewer, "/company/captures");
+        Assert.DoesNotContain("href=\"/company/drivers\"", list); // no Fleet menu for a Viewer
+        Assert.DoesNotContain("href=\"/company/users\"", list);   // no Company menu for a Viewer
+        Assert.Matches("class=\"nav-link tl-navlink active\"[^>]*href=\"/company/captures\"", list);
+    }
+
+    [Fact]
     public async Task My_slips_shows_15_at_a_time_and_filters_busy_done_and_day()
     {
         var owner = await _s.CompanyWithOwnerAsync("Office Capture Eight", "owner@office-eight.test");

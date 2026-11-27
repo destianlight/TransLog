@@ -222,7 +222,22 @@ a.tl-card-link:hover, a.tl-card-link:focus-visible { border-color: var(--tl-oran
     vertical-align: -.125em;
     flex-shrink: 0;
 }
-.tl-navlink { display: inline-flex; align-items: center; gap: .45rem; }
+.tl-navlink { display: inline-flex; align-items: center; gap: .45rem; white-space: nowrap; }
+/* Menu (Part 4b fix 2): highlighted section, dropdown items full width, long names cut short on wide screens. */
+.tl-nav .nav-link.active { color: var(--tl-accent-text); font-weight: 600; }
+.tl-nav .dropdown-item.tl-navlink { display: flex; }
+.tl-nav .dropdown-item.active, .tl-nav .dropdown-item:active { background: var(--tl-orange); color: #fff; }
+@media (min-width: 992px) {
+    .tl-navname { max-width: 11rem; overflow: hidden; text-overflow: ellipsis; }
+}
+@media (max-width: 991.98px) {
+    /* Folded menu: a little room between items and a line above the account block. */
+    .tl-nav { padding: .5rem 0 1rem; }
+    .tl-nav .nav-link { padding: .6rem 0; }
+    .tl-nav .dropdown-menu { border: 0; padding-left: 1.6rem; background: transparent; }
+    .tl-nav .dropdown-item { padding: .5rem 0; }
+    .tl-nav .dropdown-item.active { background: transparent; color: var(--tl-accent-text); font-weight: 600; }
+}
 
 /* ---- Area bar: which area you are in (System admin dark, Company blue, Driver green) ---- */
 .tl-areabar { font-size: .95rem; }

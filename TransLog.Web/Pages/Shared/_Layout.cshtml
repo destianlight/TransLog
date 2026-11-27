@@ -6,6 +6,10 @@
     var whatsApp = Contact.WhatsAppLink(Configuration);
     var siteUrl = $"{Context.Request.Scheme}://{Context.Request.Host}";
     var pageTitle = ViewData["Title"] is string pt ? $"{pt} – TransLog" : "TransLog";
+    // Menu highlight: the section of the current page (Home only on its exact address).
+    var path = Context.Request.Path;
+    string On(string prefix) => path.StartsWithSegments(prefix, StringComparison.OrdinalIgnoreCase) ? "active" : "";
+    string OnExact(string prefix) => string.Equals((path.Value ?? "").TrimEnd('/'), prefix, StringComparison.OrdinalIgnoreCase) ? "active" : "";
     var pageDescription = ViewData["Description"] as string
         ?? "Fleet slips, captured from one photo. Drivers photograph fuel slips, weighbridge tickets and odometers; AI reads them; you approve and report.";
 }
@@ -52,7 +56,9 @@
     <a class="visually-hidden-focusable" href="#main">Skip to content</a>
 
     <header class="tl-header">
-        <nav class="navbar navbar-expand-md" aria-label="Main">
+        @* Part 4b fix 2: few top items, the rest grouped in dropdowns; the menu folds into the ☰ button below 992 px
+           (also a phone in "desktop site" mode). *@
+        <nav class="navbar navbar-expand-lg" aria-label="Main">
             <div class="container">
                 <a class="navbar-brand tl-brand" asp-area="" asp-page="/Index">
                     <svg class="tl-mark" aria-hidden="true"><use href="@(Icons.Sprite)#tl-mark"></use></svg>
@@ -63,48 +69,70 @@
                     <span class="navbar-toggler-icon"></span>
                 </button>
                 <div class="collapse navbar-collapse" id="mainNav">
-                    <ul class="navbar-nav ms-auto align-items-md-center gap-md-2">
+                    <ul class="navbar-nav ms-auto align-items-lg-center gap-lg-1 tl-nav">
                         @if (signedIn)
                         {
                             if (User.IsInRole(Roles.SysAdmin))
                             {
-                                <li class="nav-item"><a class="nav-link tl-navlink" asp-area="SysAdmin" asp-page="/Index">@Icons.Svg("buildings") Companies</a></li>
-                                <li class="nav-item"><a class="nav-link tl-navlink" asp-area="SysAdmin" asp-page="/Admins">@Icons.Svg("person-gear") TransLog admins</a></li>
-                                <li class="nav-item"><a class="nav-link tl-navlink" asp-area="SysAdmin" asp-page="/Audit">@Icons.Svg("journal-text") Audit log</a></li>
+                                <li class="nav-item"><a class="nav-link tl-navlink @OnExact("/sysadmin") @On("/sysadmin/companies")" asp-area="SysAdmin" asp-page="/Index">@Icons.Svg("buildings") Companies</a></li>
+                                <li class="nav-item"><a class="nav-link tl-navlink @On("/sysadmin/admins")" asp-area="SysAdmin" asp-page="/Admins">@Icons.Svg("person-gear") TransLog admins</a></li>
+                                <li class="nav-item"><a class="nav-link tl-navlink @On("/sysadmin/audit")" asp-area="SysAdmin" asp-page="/Audit">@Icons.Svg("journal-text") Audit log</a></li>
                             }
                             else if (User.IsInRole(Roles.Driver))
                             {
-                                <li class="nav-item"><a class="nav-link tl-navlink" asp-area="Driver" asp-page="/Index">@Icons.Svg("house") Home</a></li>
-                                <li class="nav-item"><a class="nav-link tl-navlink" asp-area="Driver" asp-page="/Capture">@Icons.Svg("camera") Photograph</a></li>
-                                <li class="nav-item"><a class="nav-link tl-navlink" asp-area="Driver" asp-page="/Slips">@Icons.Svg("images") My slips</a></li>
-                                <li class="nav-item"><a class="nav-link tl-navlink" asp-area="Driver" asp-page="/MyVehicle">@Icons.Svg("truck-front") My vehicle</a></li>
+                                <li class="nav-item"><a class="nav-link tl-navlink @OnExact("/driver")" asp-area="Driver" asp-page="/Index">@Icons.Svg("house") Home</a></li>
+                                <li class="nav-item"><a class="nav-link tl-navlink @On("/driver/capture")" asp-area="Driver" asp-page="/Capture">@Icons.Svg("camera") Photograph</a></li>
+                                <li class="nav-item"><a class="nav-link tl-navlink @On("/driver/slips")" asp-area="Driver" asp-page="/Slips">@Icons.Svg("images") My slips</a></li>
+                                <li class="nav-item"><a class="nav-link tl-navlink @On("/driver/myvehicle")" asp-area="Driver" asp-page="/MyVehicle">@Icons.Svg("truck-front") My vehicle</a></li>
                             }
                             else if (User.GetCompanyId() is not null)
                             {
-                                <li class="nav-item"><a class="nav-link tl-navlink" asp-area="Company" asp-page="/Index">@Icons.Svg("house") Home</a></li>
-                                if (User.IsInRole(Roles.Owner) || User.IsInRole(Roles.Admin) || User.IsInRole(Roles.Capturer))
+                                var fleetAdmin = User.IsInRole(Roles.Owner) || User.IsInRole(Roles.Admin);
+                                var canCapture = fleetAdmin || User.IsInRole(Roles.Capturer);
+                                var fleetOn = On("/company/drivers") + On("/company/vehicles") + On("/company/links");
+                                var companyOn = On("/company/users") + On("/company/settings") + On("/company/activity");
+                                <li class="nav-item"><a class="nav-link tl-navlink @OnExact("/company")" asp-area="Company" asp-page="/Index">@Icons.Svg("house") Home</a></li>
+                                if (canCapture)
                                 {
-                                    <li class="nav-item"><a class="nav-link tl-navlink" asp-area="Company" asp-page="/Capture">@Icons.Svg("cloud-arrow-up") Capture</a></li>
+                                    <li class="nav-item"><a class="nav-link tl-navlink @On("/company/capture")" asp-area="Company" asp-page="/Capture">@Icons.Svg("cloud-arrow-up") Capture</a></li>
                                 }
-                                <li class="nav-item"><a class="nav-link tl-navlink" asp-area="Company" asp-page="/Captures/Index">@Icons.Svg("images") Captures</a></li>
-                                if (User.IsInRole(Roles.Owner) || User.IsInRole(Roles.Admin))
+                                <li class="nav-item"><a class="nav-link tl-navlink @On("/company/captures")" asp-area="Company" asp-page="/Captures/Index">@Icons.Svg("images") Captures</a></li>
+                                if (fleetAdmin)
                                 {
-                                    <li class="nav-item"><a class="nav-link tl-navlink" asp-area="Company" asp-page="/Drivers/Index">@Icons.Svg("person-vcard") Drivers</a></li>
-                                    <li class="nav-item"><a class="nav-link tl-navlink" asp-area="Company" asp-page="/Vehicles/Index">@Icons.Svg("truck") Vehicles</a></li>
-                                    <li class="nav-item"><a class="nav-link tl-navlink" asp-area="Company" asp-page="/Links/Index">@Icons.Svg("clock-history") Link history</a></li>
+                                    <li class="nav-item dropdown">
+                                        <a class="nav-link tl-navlink dropdown-toggle @(fleetOn.Length > 0 ? "active" : "")" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">@Icons.Svg("truck") Fleet</a>
+                                        <ul class="dropdown-menu dropdown-menu-end">
+                                            <li><a class="dropdown-item tl-navlink @On("/company/drivers")" asp-area="Company" asp-page="/Drivers/Index">@Icons.Svg("person-vcard") Drivers</a></li>
+                                            <li><a class="dropdown-item tl-navlink @On("/company/vehicles")" asp-area="Company" asp-page="/Vehicles/Index">@Icons.Svg("truck") Vehicles</a></li>
+                                            <li><a class="dropdown-item tl-navlink @On("/company/links")" asp-area="Company" asp-page="/Links/Index">@Icons.Svg("clock-history") Link history</a></li>
+                                        </ul>
+                                    </li>
                                 }
                                 if (User.IsInRole(Roles.Owner))
                                 {
-                                    <li class="nav-item"><a class="nav-link tl-navlink" asp-area="Company" asp-page="/Users/Index">@Icons.Svg("people") Users</a></li>
-                                    <li class="nav-item"><a class="nav-link tl-navlink" asp-area="Company" asp-page="/Settings">@Icons.Svg("gear") Settings</a></li>
-                                    <li class="nav-item"><a class="nav-link tl-navlink" asp-area="Company" asp-page="/Activity">@Icons.Svg("list-check") Activity</a></li>
+                                    <li class="nav-item dropdown">
+                                        <a class="nav-link tl-navlink dropdown-toggle @(companyOn.Length > 0 ? "active" : "")" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">@Icons.Svg("buildings") Company</a>
+                                        <ul class="dropdown-menu dropdown-menu-end">
+                                            <li><a class="dropdown-item tl-navlink @On("/company/users")" asp-area="Company" asp-page="/Users/Index">@Icons.Svg("people") Users</a></li>
+                                            <li><a class="dropdown-item tl-navlink @On("/company/settings")" asp-area="Company" asp-page="/Settings">@Icons.Svg("gear") Settings</a></li>
+                                            <li><a class="dropdown-item tl-navlink @On("/company/activity")" asp-area="Company" asp-page="/Activity">@Icons.Svg("list-check") Activity</a></li>
+                                        </ul>
+                                    </li>
                                 }
                             }
-                            <li class="nav-item"><a class="nav-link tl-navlink fw-semibold" asp-area="" asp-page="/Account/Index">@Icons.Svg("person-circle") @User.GetFullName()</a></li>
-                            <li class="nav-item">
-                                <form method="post" asp-area="" asp-page="/Logout" class="d-inline">
-                                    <button type="submit" class="btn btn-outline-secondary btn-sm ms-md-2 tl-navlink">@Icons.Svg("box-arrow-right") Log out</button>
-                                </form>
+                            <li class="nav-item dropdown">
+                                <a class="nav-link tl-navlink dropdown-toggle fw-semibold @On("/account")" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                    @Icons.Svg("person-circle") <span class="tl-navname">@User.GetFullName()</span>
+                                </a>
+                                <ul class="dropdown-menu dropdown-menu-end">
+                                    <li><a class="dropdown-item tl-navlink" asp-area="" asp-page="/Account/Index">@Icons.Svg("person-circle") My account</a></li>
+                                    <li><hr class="dropdown-divider" /></li>
+                                    <li>
+                                        <form method="post" asp-area="" asp-page="/Logout">
+                                            <button type="submit" class="dropdown-item tl-navlink">@Icons.Svg("box-arrow-right") Log out</button>
+                                        </form>
+                                    </li>
+                                </ul>
                             </li>
                         }
                         else
@@ -113,7 +141,7 @@
                             <li class="nav-item"><a class="nav-link" href="/#types">What you can capture</a></li>
                             <li class="nav-item"><a class="nav-link" href="/#features">Features</a></li>
                             <li class="nav-item"><a class="nav-link fw-semibold" asp-area="" asp-page="/Login">Log in</a></li>
-                            <li class="nav-item"><a class="btn btn-tl ms-md-2" href="@whatsApp" target="_blank" rel="noopener">Register on WhatsApp</a></li>
+                            <li class="nav-item"><a class="btn btn-tl ms-lg-2" href="@whatsApp" target="_blank" rel="noopener">Register on WhatsApp</a></li>
                         }
                     </ul>
                 </div>
