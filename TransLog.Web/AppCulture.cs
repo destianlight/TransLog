@@ -17,6 +17,14 @@ public static class AppCulture
     public static DateTime ToSast(DateTime utc) =>
         TimeZoneInfo.ConvertTimeFromUtc(DateTime.SpecifyKind(utc, DateTimeKind.Utc), Sast);
 
+    /// <summary>The start of a South African day in UTC (Part 4b date filters: from this time, before the next day's start).</summary>
+    public static DateTime SastDayStartUtc(DateOnly day) =>
+        TimeZoneInfo.ConvertTimeToUtc(DateTime.SpecifyKind(day.ToDateTime(TimeOnly.MinValue), DateTimeKind.Unspecified), Sast);
+
+    /// <summary>Reads a yyyy-MM-dd date from a query string (invariant, so the page culture never changes it).</summary>
+    public static DateOnly? ParseDay(string? text) =>
+        DateOnly.TryParseExact(text, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var d) ? d : null;
+
     private static CultureInfo Build()
     {
         var ci = new CultureInfo("en-ZA");

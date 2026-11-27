@@ -7,7 +7,7 @@ using TransLog.Web.Storage;
 namespace TransLog.Web.Captures;
 
 /// <summary>One photo as it arrives from the phone (Part 4a).</summary>
-public sealed class CaptureUpload
+public sealed record CaptureUpload
 {
     public const int MaxPhotoBytes = 8 * 1024 * 1024;
     public const int MaxThumbBytes = 512 * 1024;
@@ -146,7 +146,32 @@ public class CaptureService(AppDbContext db, IFileStore files, ILogger<CaptureSe
         return await SaveAsync(driver.CompanyId, userId, driver.Id, vehicleId, upload);
     }
 
-    /// <summary>Checks and stores one photo as a new capture. Also used by office capture (Part 4b).</summary>
+    /// <summary>
+    /// An office user (Owner, Admin, Capturer) adds a photo for a driver and vehicle of their company (Part 4b); both optional.
+    /// Always source Office, no location, and the photo date is the moment it arrives (a file's date on a PC is often only
+    /// when it was copied). The date printed on the slip is read by the AI in Part 5.
+    /// </summary>
+    public async Task<CaptureSaveResult> SaveForOfficeAsync(int companyId, int userId, int? driverId, int? vehicleId, CaptureUpload upload)
+    {
+        // The tenant filter hides other companies' drivers and vehicles, so their ids are simply "not found".
+        if (driverId is int d && !await db.Drivers.AnyAsync(x => x.Id == d))
+            return CaptureSaveResult.Fail("That driver was not found. Reload the page.");
+        if (vehicleId is int v && !await db.Vehicles.AnyAsync(x => x.Id == v))
+            return CaptureSaveResult.Fail("That vehicle was not found. Reload the page.");
+
+        var office = upload with
+        {
+            Source = ImageSource.Office,
+            CapturedAtUtc = null,
+            Latitude = null,
+            Longitude = null,
+            Accuracy = null,
+            LocationTimeUtc = null,
+        };
+        return await SaveAsync(companyId, userId, driverId, vehicleId, office);
+    }
+
+    /// <summary>Checks and stores one photo as a new capture (drivers and office capture).</summary>
     public async Task<CaptureSaveResult> SaveAsync(int companyId, int userId, int? driverId, int? vehicleId, CaptureUpload upload)
     {
         var existing = await FindAsync(upload.ClientKey);
@@ -197,7 +222,7 @@ public class CaptureService(AppDbContext db, IFileStore files, ILogger<CaptureSe
                     Sha256 = Convert.ToHexStringLower(SHA256.HashData(upload.Photo)),
                     SortOrder = 0,
                     Rotation = upload.Rotation,
-                    RotatedBy = upload.Rotation == 0 ? null : RotatedBy.Driver,
+                    RotatedBy = upload.Rotation == 0 ? null : upload.Source == ImageSource.Office ? RotatedBy.Office : RotatedBy.Driver,
                     Source = upload.Source,
                     Latitude = upload.Latitude,
                     Longitude = upload.Longitude,

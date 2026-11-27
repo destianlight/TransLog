@@ -35,6 +35,9 @@ public enum RotatedBy
     Driver = 0,
     Ai = 1,
     Reviewer = 2,
+
+    /// <summary>Turned by the office user before uploading (Part 4b).</summary>
+    Office = 3,
 }
 
 /// <summary>
@@ -62,7 +65,7 @@ public class Capture
 
     public Driver? Driver { get; set; }
 
-    /// <summary>The login that sent it (the driver, or an office user in Part 4b).</summary>
+    /// <summary>The login that sent it (the driver, or an office user: Part 4b office capture).</summary>
     public int CapturedByUserId { get; set; }
 
     /// <summary>UTC. When the photo was taken, by the phone's clock (a photo can wait on the phone without signal).</summary>

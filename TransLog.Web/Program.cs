@@ -79,6 +79,7 @@ builder.Services.AddAuthorizationBuilder()
     .AddPolicy(Policies.CompanyMember, p => p.RequireRole(Roles.Company).RequireClaim(AppClaims.CompanyId))
     .AddPolicy(Policies.CompanyOwner, p => p.RequireRole(Roles.Owner).RequireClaim(AppClaims.CompanyId))
     .AddPolicy(Policies.CompanyAdmin, p => p.RequireRole(Roles.Owner, Roles.Admin).RequireClaim(AppClaims.CompanyId))
+    .AddPolicy(Policies.CompanyCapture, p => p.RequireRole(Roles.Owner, Roles.Admin, Roles.Capturer).RequireClaim(AppClaims.CompanyId))
     .AddPolicy(Policies.DriverMember, p => p.RequireRole(Roles.Driver).RequireClaim(AppClaims.CompanyId));
 
 builder.Services.AddRazorPages(o =>
@@ -94,6 +95,8 @@ builder.Services.AddRazorPages(o =>
     o.Conventions.AuthorizeAreaFolder("Company", "/Drivers", Policies.CompanyAdmin);
     o.Conventions.AuthorizeAreaFolder("Company", "/Vehicles", Policies.CompanyAdmin);
     o.Conventions.AuthorizeAreaFolder("Company", "/Links", Policies.CompanyAdmin);
+    // Office capture (Part 4b): the Owner, Admins and Capturers add photos; every office role sees the Captures list.
+    o.Conventions.AuthorizeAreaPage("Company", "/Capture", Policies.CompanyCapture);
 });
 builder.Services.AddRouting(o => o.LowercaseUrls = true);
 builder.Services.AddHttpContextAccessor();

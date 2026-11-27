@@ -42,6 +42,9 @@ public static class Policies
     /// <summary>A company Owner or Admin: drivers and vehicles.</summary>
     public const string CompanyAdmin = "CompanyAdmin";
 
+    /// <summary>A company Owner, Admin or Capturer: adds photos on the office Capture page (Part 4b).</summary>
+    public const string CompanyCapture = "CompanyCapture";
+
     /// <summary>A driver of a company: opens the Driver area only.</summary>
     public const string DriverMember = "DriverMember";
 }

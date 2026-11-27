@@ -82,6 +82,11 @@
                             else if (User.GetCompanyId() is not null)
                             {
                                 <li class="nav-item"><a class="nav-link tl-navlink" asp-area="Company" asp-page="/Index">@Icons.Svg("house") Home</a></li>
+                                if (User.IsInRole(Roles.Owner) || User.IsInRole(Roles.Admin) || User.IsInRole(Roles.Capturer))
+                                {
+                                    <li class="nav-item"><a class="nav-link tl-navlink" asp-area="Company" asp-page="/Capture">@Icons.Svg("cloud-arrow-up") Capture</a></li>
+                                }
+                                <li class="nav-item"><a class="nav-link tl-navlink" asp-area="Company" asp-page="/Captures/Index">@Icons.Svg("images") Captures</a></li>
                                 if (User.IsInRole(Roles.Owner) || User.IsInRole(Roles.Admin))
                                 {
                                     <li class="nav-item"><a class="nav-link tl-navlink" asp-area="Company" asp-page="/Drivers/Index">@Icons.Svg("person-vcard") Drivers</a></li>

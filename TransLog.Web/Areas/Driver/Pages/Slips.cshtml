@@ -1,5 +1,6 @@
 @page
 @model SlipsModel
+@using TransLog.Web.Captures
 @{
     ViewData["Title"] = "My slips";
 }
@@ -21,16 +22,33 @@
             <div id="waitingList" class="d-flex flex-column gap-2"></div>
         </div>
 
+        @* Filters: All / Busy / Done and one day. *@
+        <form method="get" class="tl-filters mb-3" id="slipFilters">
+            @foreach (var show in new[] { CaptureShow.All, CaptureShow.Busy, CaptureShow.Done })
+            {
+                <a class="btn btn-sm @(Model.Show == show ? "btn-tl" : "btn-outline-secondary")" asp-page="/Slips" asp-all-route-data="Model.With(show)">@show</a>
+            }
+            @if (Model.Show != CaptureShow.All)
+            {
+                <input type="hidden" name="show" value="@Model.Show.ToString().ToLowerInvariant()" />
+            }
+            <input type="date" name="day" class="form-control form-control-sm w-auto ms-auto" aria-label="Day"
+                   value="@(Model.Day?.ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture))" />
+            @if (Model.Day is not null)
+            {
+                <a class="btn btn-sm btn-outline-secondary" asp-page="/Slips" asp-route-show="@(Model.Show == CaptureShow.All ? null : Model.Show.ToString().ToLowerInvariant())" aria-label="All days">@Icons.Svg("x-lg")</a>
+            }
+        </form>
+
         @if (Model.Slips.Count == 0)
         {
-            <div class="tl-card p-3 text-body-secondary">No slips sent yet.</div>
+            <div class="tl-card p-3 text-body-secondary">@(Model.Filtered ? "No slips for this choice." : "No slips sent yet.")</div>
         }
         else
         {
             <div class="d-flex flex-column gap-2">
                 @foreach (var s in Model.Slips)
                 {
-                    var (text, css) = SlipsModel.StatusLabel(s.Status);
                     <div class="tl-card p-2 d-flex gap-3 align-items-center">
                         @if (s.ImageId is int imageId)
                         {
@@ -44,13 +62,20 @@
                             <div class="text-body-secondary text-truncate">
                                 @(s.Vehicle ?? "No vehicle")
                                 @if (s.Source == ImageSource.Gallery) { <span> · from gallery</span> }
-                                @if (!s.HasLocation) { <span> · no location</span> }
+                                @if (s.Source == ImageSource.Office) { <span> · added by the office</span> }
+                                else if (!s.HasLocation) { <span> · no location</span> }
                             </div>
-                            <span class="badge @css mt-1">@text</span>
+                            <partial name="_CaptureProgress" model="new CaptureProgress(s.CaptureId, s.Status)" />
                         </div>
                     </div>
                 }
             </div>
+            @if (Model.HasMore)
+            {
+                <div class="text-center mt-3">
+                    <a class="btn btn-outline-secondary" asp-page="/Slips" asp-all-route-data="Model.With(take: Model.Take + SlipsModel.PageSize)">Show @SlipsModel.PageSize more</a>
+                </div>
+            }
         }
     </div>
 </section>
@@ -91,6 +116,8 @@
                     list.appendChild(row);
                 });
             }
+            var filters = document.getElementById('slipFilters');
+            filters.elements.day.addEventListener('change', function () { filters.submit(); });
             var sentSome = false;
             window.addEventListener('tlqueue', function (e) { draw(e.detail.items); });
             document.getElementById('sendNow').onclick = function () {

@@ -51,12 +51,22 @@
                     </a>
                 </div>
             }
-            <div class="col-md-4">
-                <div class="tl-card h-100">
-                    <svg class="tl-icon" aria-hidden="true"><use href="/resources/icons.svg#camera"></use></svg>
-                    <h2 class="h6 mt-2">Slips</h2>
-                    <p class="small text-body-secondary mb-0">Photos read by AI, ready for you to approve. Coming in Parts 4 to 6.</p>
+            @if (Model.CanCapture)
+            {
+                <div class="col-md-4">
+                    <a class="tl-card tl-card-link d-block h-100" asp-page="/Capture">
+                        <svg class="tl-icon" aria-hidden="true"><use href="@(Icons.Sprite)#cloud-arrow-up"></use></svg>
+                        <h2 class="h6 mt-2">Capture</h2>
+                        <p class="small text-body-secondary mb-0">Add slip photos from this computer or phone for a driver and vehicle.</p>
+                    </a>
                 </div>
+            }
+            <div class="col-md-4">
+                <a class="tl-card tl-card-link d-block h-100" asp-page="/Captures/Index">
+                    <svg class="tl-icon" aria-hidden="true"><use href="@(Icons.Sprite)#images"></use></svg>
+                    <h2 class="h6 mt-2">Captures</h2>
+                    <p class="small text-body-secondary mb-0">Every slip photo sent by your drivers and office, with its progress. AI reading comes in Part 5.</p>
+                </a>
             </div>
         </div>
     </div>

@@ -247,3 +247,76 @@ a.tl-card-link:hover, a.tl-card-link:focus-visible { border-color: var(--tl-oran
     font-weight: 600;
 }
 .tl-bigbtn .bi { font-size: 1.75rem; color: var(--tl-accent-text); }
+
+/* ---- Slip progress (Part 4b): Sent → Reading → Checking → Done. Part 5 moves it live with SignalR ---- */
+.tl-progress { margin-top: .35rem; max-width: 22rem; }
+.tl-progress ol { display: flex; gap: 3px; margin: 0; padding: 0; list-style: none; }
+.tl-progress li {
+    flex: 1;
+    padding-top: 7px;
+    position: relative;
+    font-size: .68rem;
+    line-height: 1.1;
+    color: var(--bs-secondary-color);
+}
+.tl-progress li::before {
+    content: "";
+    position: absolute;
+    inset: 0 0 auto 0;
+    height: 4px;
+    border-radius: 2px;
+    background: var(--bs-border-color);
+}
+.tl-progress li.done::before { background: var(--tl-orange); }
+.tl-progress li.done { color: var(--bs-body-color); }
+.tl-progress li.now { color: var(--bs-body-color); font-weight: 600; }
+.tl-progress li.now::before {
+    background: linear-gradient(90deg, var(--tl-orange) 0 40%, var(--bs-border-color) 40%);
+    background-size: 250% 100%;
+    animation: tl-progress-run 1.6s linear infinite;
+}
+.tl-progress-ok li::before { background: var(--bs-success) !important; }
+.tl-progress-bad li::before { background: var(--bs-danger) !important; }
+.tl-progress-label { font-size: .78rem; font-weight: 600; margin-top: .2rem; }
+.tl-progress-ok .tl-progress-label { color: var(--bs-success-text-emphasis); }
+.tl-progress-bad .tl-progress-label { color: var(--bs-danger-text-emphasis); }
+@keyframes tl-progress-run { from { background-position: 100% 0; } to { background-position: -150% 0; } }
+@media (prefers-reduced-motion: reduce) { .tl-progress li.now::before { animation: none; } }
+
+/* ---- Filter chips on slip lists (Part 4b) ---- */
+.tl-filters { display: flex; flex-wrap: wrap; gap: .5rem; align-items: center; }
+.tl-filters .btn { border-radius: 2rem; }
+
+/* ---- Office capture (Part 4b): chosen files as tiles ---- */
+.tl-pick {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: .35rem;
+    padding: 1.5rem;
+    border: 2px dashed var(--bs-border-color);
+    border-radius: 1rem;
+    text-align: center;
+    cursor: pointer;
+}
+.tl-pick:hover, .tl-pick:focus-within { border-color: var(--tl-orange); }
+.tl-pick .bi { font-size: 2rem; color: var(--tl-accent-text); }
+.tl-tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: .75rem; }
+.tl-tile { border: 1px solid var(--bs-border-color); border-radius: .75rem; overflow: hidden; background: var(--bs-body-bg); }
+.tl-tile-img { aspect-ratio: 3 / 4; display: flex; align-items: center; justify-content: center; background: var(--bs-tertiary-bg); }
+.tl-tile-img canvas { max-width: 100%; max-height: 100%; }
+.tl-tile-bar { display: flex; justify-content: space-between; padding: .25rem; }
+.tl-tile-state { padding: 0 .5rem .5rem; font-size: .8rem; min-height: 1.6rem; }
+.tl-tile-sent { border-color: var(--bs-success); }
+.tl-tile-failed, .tl-tile-bad { border-color: var(--bs-danger); }
+.tl-sendbar {
+    position: sticky;
+    bottom: 0;
+    z-index: 5;
+    display: flex;
+    align-items: center;
+    gap: .75rem;
+    padding: .75rem 0;
+    background: var(--bs-body-bg);
+    border-top: 1px solid var(--bs-border-color);
+}

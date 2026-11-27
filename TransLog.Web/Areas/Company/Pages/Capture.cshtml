@@ -1,0 +1,54 @@
+@page
+@model CaptureModel
+@{
+    ViewData["Title"] = "Capture";
+}
+
+<section class="tl-section pt-4 pb-0">
+    <div class="container" style="max-width: 960px">
+        @Html.AntiForgeryToken()
+        <div class="d-flex align-items-center gap-2 mb-3">
+            <h1 class="tl-h2 mb-0 me-auto">Capture</h1>
+            <a class="btn btn-outline-secondary" asp-page="/Captures/Index">@Icons.Svg("images") Captures</a>
+        </div>
+        <p class="text-body-secondary">Add slip photos from this computer or phone. Each photo becomes its own capture for the driver and vehicle you pick.</p>
+
+        <div class="row g-3 mb-3">
+            <div class="col-md-6">
+                <label class="form-label" for="driverId">Driver</label>
+                <select id="driverId" class="form-select" asp-items="Model.DriverChoices">
+                    <option value="">No driver</option>
+                </select>
+            </div>
+            <div class="col-md-6">
+                <label class="form-label" for="vehicleId">Vehicle</label>
+                <select id="vehicleId" class="form-select" asp-items="Model.VehicleChoices">
+                    <option value="">No vehicle (set it when reviewing)</option>
+                </select>
+                <div class="form-text">Follows the driver's linked vehicle; change it if the slips are for another one.</div>
+            </div>
+        </div>
+
+        <label class="tl-pick mb-3">
+            @Icons.Svg("cloud-arrow-up")
+            <span class="fw-semibold">Choose photos</span>
+            <span class="small text-body-secondary">JPEG, PNG or WebP. Several at once is fine.</span>
+            <input type="file" id="files" accept="image/jpeg,image/png,image/webp" multiple class="visually-hidden" />
+        </label>
+
+        <div id="tiles" class="tl-tiles" data-sprite="@Icons.Sprite"></div>
+
+        <div class="tl-sendbar mt-3" id="sendbar" hidden>
+            <span id="summary" class="small me-auto"></span>
+            <a class="btn btn-outline-secondary" id="toList" asp-page="/Captures/Index" hidden>See captures</a>
+            <button type="button" class="btn btn-tl" id="send">Send</button>
+        </div>
+    </div>
+</section>
+<div class="pb-5"></div>
+
+<script type="application/json" id="driverLinks">@Html.Raw(Model.LinksJson)</script>
+
+@section Scripts {
+    <script src="~/resources/page-office-capture.js" asp-append-version="true"></script>
+}
