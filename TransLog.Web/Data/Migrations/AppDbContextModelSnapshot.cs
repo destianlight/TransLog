@@ -490,11 +490,11 @@ namespace TransLog.Web.Data.Migrations
                     b.Property<DateOnly?>("LicenceDiscExpiry")
                         .HasColumnType("date");
 
-                    b.Property<string>("OtherMake")
+                    b.Property<string>("Make")
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
 
-                    b.Property<string>("OtherModel")
+                    b.Property<string>("Model")
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
 
@@ -510,8 +510,9 @@ namespace TransLog.Web.Data.Migrations
                         .HasPrecision(8, 1)
                         .HasColumnType("decimal(8,1)");
 
-                    b.Property<int?>("VehicleModelId")
-                        .HasColumnType("int");
+                    b.Property<string>("Variant")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
 
                     b.Property<string>("VehicleType")
                         .HasMaxLength(30)
@@ -521,8 +522,6 @@ namespace TransLog.Web.Data.Migrations
                         .HasColumnType("int");
 
                     b.HasKey("Id");
-
-                    b.HasIndex("VehicleModelId");
 
                     b.HasIndex("CompanyId", "RegistrationNo")
                         .IsUnique();
@@ -557,69 +556,6 @@ namespace TransLog.Web.Data.Migrations
                     b.HasIndex("CompanyId", "VehicleId");
 
                     b.ToTable("VehicleAliases");
-                });
-
-            modelBuilder.Entity("TransLog.Web.Data.VehicleMake", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<bool>("IsActive")
-                        .HasColumnType("bit");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("Name")
-                        .IsUnique();
-
-                    b.ToTable("VehicleMakes");
-                });
-
-            modelBuilder.Entity("TransLog.Web.Data.VehicleModel", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<string>("FuelType")
-                        .HasMaxLength(20)
-                        .HasColumnType("nvarchar(20)");
-
-                    b.Property<bool>("IsActive")
-                        .HasColumnType("bit");
-
-                    b.Property<int>("MakeId")
-                        .HasColumnType("int");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
-
-                    b.Property<decimal?>("TankCapacity")
-                        .HasPrecision(8, 1)
-                        .HasColumnType("decimal(8,1)");
-
-                    b.Property<string>("VehicleType")
-                        .HasMaxLength(30)
-                        .HasColumnType("nvarchar(30)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("MakeId", "Name")
-                        .IsUnique();
-
-                    b.ToTable("VehicleModels");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<int>", b =>
@@ -731,13 +667,6 @@ namespace TransLog.Web.Data.Migrations
                         .HasForeignKey("CompanyId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
-
-                    b.HasOne("TransLog.Web.Data.VehicleModel", "VehicleModel")
-                        .WithMany()
-                        .HasForeignKey("VehicleModelId")
-                        .OnDelete(DeleteBehavior.Restrict);
-
-                    b.Navigation("VehicleModel");
                 });
 
             modelBuilder.Entity("TransLog.Web.Data.VehicleAlias", b =>
@@ -758,17 +687,6 @@ namespace TransLog.Web.Data.Migrations
                     b.Navigation("Vehicle");
                 });
 
-            modelBuilder.Entity("TransLog.Web.Data.VehicleModel", b =>
-                {
-                    b.HasOne("TransLog.Web.Data.VehicleMake", "Make")
-                        .WithMany("Models")
-                        .HasForeignKey("MakeId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("Make");
-                });
-
             modelBuilder.Entity("TransLog.Web.Data.Company", b =>
                 {
                     b.Navigation("Users");
@@ -777,11 +695,6 @@ namespace TransLog.Web.Data.Migrations
             modelBuilder.Entity("TransLog.Web.Data.Vehicle", b =>
                 {
                     b.Navigation("Aliases");
-                });
-
-            modelBuilder.Entity("TransLog.Web.Data.VehicleMake", b =>
-                {
-                    b.Navigation("Models");
                 });
 #pragma warning restore 612, 618
         }
