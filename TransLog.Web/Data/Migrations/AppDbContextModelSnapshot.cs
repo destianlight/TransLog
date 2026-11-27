@@ -328,6 +328,173 @@ namespace TransLog.Web.Data.Migrations
                     b.ToTable("Companies");
                 });
 
+            modelBuilder.Entity("TransLog.Web.Data.Driver", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Address")
+                        .HasMaxLength(300)
+                        .HasColumnType("nvarchar(300)");
+
+                    b.Property<string>("Cell")
+                        .IsRequired()
+                        .HasMaxLength(15)
+                        .HasColumnType("nvarchar(15)");
+
+                    b.Property<int>("CompanyId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Email")
+                        .HasMaxLength(256)
+                        .HasColumnType("nvarchar(256)");
+
+                    b.Property<string>("FirstName")
+                        .IsRequired()
+                        .HasMaxLength(60)
+                        .HasColumnType("nvarchar(60)");
+
+                    b.Property<string>("IdNumber")
+                        .HasMaxLength(13)
+                        .HasColumnType("nvarchar(13)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("LicenceCode")
+                        .HasMaxLength(10)
+                        .HasColumnType("nvarchar(10)");
+
+                    b.Property<DateOnly?>("LicenceExpiry")
+                        .HasColumnType("date");
+
+                    b.Property<string>("LicenceNo")
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
+                    b.Property<DateOnly?>("PrdpExpiry")
+                        .HasColumnType("date");
+
+                    b.Property<string>("Surname")
+                        .IsRequired()
+                        .HasMaxLength(60)
+                        .HasColumnType("nvarchar(60)");
+
+                    b.HasKey("Id");
+
+                    b.HasAlternateKey("CompanyId", "Id");
+
+                    b.HasIndex("CompanyId", "Cell")
+                        .IsUnique();
+
+                    b.HasIndex("CompanyId", "IdNumber")
+                        .IsUnique()
+                        .HasFilter("[IdNumber] IS NOT NULL");
+
+                    b.ToTable("Drivers");
+                });
+
+            modelBuilder.Entity("TransLog.Web.Data.Vehicle", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("CompanyId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int?>("CurrentOdometer")
+                        .HasColumnType("int");
+
+                    b.Property<string>("FleetNo")
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
+                    b.Property<string>("FuelType")
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<DateOnly?>("LicenceDiscExpiry")
+                        .HasColumnType("date");
+
+                    b.Property<string>("Make")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("Model")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("RegistrationNo")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<DateOnly?>("RoadworthyExpiry")
+                        .HasColumnType("date");
+
+                    b.Property<decimal?>("TankCapacity")
+                        .HasPrecision(8, 1)
+                        .HasColumnType("decimal(8,1)");
+
+                    b.Property<string>("VehicleType")
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
+                    b.Property<int?>("Year")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CompanyId", "RegistrationNo")
+                        .IsUnique();
+
+                    b.ToTable("Vehicles");
+                });
+
+            modelBuilder.Entity("TransLog.Web.Data.VehicleAlias", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Alias")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<int>("CompanyId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("VehicleId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CompanyId", "Alias")
+                        .IsUnique();
+
+                    b.HasIndex("CompanyId", "VehicleId");
+
+                    b.ToTable("VehicleAliases");
+                });
+
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<int>", b =>
                 {
                     b.HasOne("TransLog.Web.Data.AppRole", null)
@@ -389,9 +556,50 @@ namespace TransLog.Web.Data.Migrations
                     b.Navigation("Company");
                 });
 
+            modelBuilder.Entity("TransLog.Web.Data.Driver", b =>
+                {
+                    b.HasOne("TransLog.Web.Data.Company", null)
+                        .WithMany()
+                        .HasForeignKey("CompanyId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("TransLog.Web.Data.Vehicle", b =>
+                {
+                    b.HasOne("TransLog.Web.Data.Company", null)
+                        .WithMany()
+                        .HasForeignKey("CompanyId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("TransLog.Web.Data.VehicleAlias", b =>
+                {
+                    b.HasOne("TransLog.Web.Data.Company", null)
+                        .WithMany()
+                        .HasForeignKey("CompanyId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("TransLog.Web.Data.Vehicle", "Vehicle")
+                        .WithMany("Aliases")
+                        .HasForeignKey("CompanyId", "VehicleId")
+                        .HasPrincipalKey("CompanyId", "Id")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Vehicle");
+                });
+
             modelBuilder.Entity("TransLog.Web.Data.Company", b =>
                 {
                     b.Navigation("Users");
+                });
+
+            modelBuilder.Entity("TransLog.Web.Data.Vehicle", b =>
+                {
+                    b.Navigation("Aliases");
                 });
 #pragma warning restore 612, 618
         }
