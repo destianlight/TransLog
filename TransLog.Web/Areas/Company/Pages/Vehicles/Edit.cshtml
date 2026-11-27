@@ -18,6 +18,12 @@
             <div class="alert alert-danger">@error</div>
         }
 
+        <div class="tl-card mb-4">
+            <h2 class="h5">Driver</h2>
+            <p class="mb-1">@(Model.DriverName is null ? "No driver linked." : $"Driven by {Model.DriverName}.")</p>
+            <p class="small mb-0"><a asp-page="/Links/Index" asp-route-vehicleId="@Model.Id">Link history</a>. Link a driver from the driver's page.</p>
+        </div>
+
         <form method="post" class="tl-card mb-4">
             <div asp-validation-summary="ModelOnly" class="alert alert-danger small" role="alert"></div>
             <partial name="_VehicleFields" for="Form" />

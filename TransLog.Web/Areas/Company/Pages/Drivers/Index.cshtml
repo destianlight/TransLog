@@ -27,7 +27,7 @@
             <div class="table-responsive">
                 <table class="table align-middle">
                     <thead>
-                        <tr><th>Driver</th><th>Licence and permit</th><th>Status</th></tr>
+                        <tr><th>Driver</th><th>Licence and permit</th><th>Vehicle</th><th>Status</th></tr>
                     </thead>
                     <tbody>
                         @foreach (var d in Model.Drivers)
@@ -44,6 +44,16 @@
                                     }
                                     @ExpiryHtml.Line("Licence", d.LicenceExpiry, Model.Today)
                                     @ExpiryHtml.Line("PrDP", d.PrdpExpiry, Model.Today)
+                                </td>
+                                <td>
+                                    @if (Model.Vehicles.TryGetValue(d.Id, out var reg))
+                                    {
+                                        <a asp-page="/Links/Index" asp-route-driverId="@d.Id">@reg</a>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-body-secondary">-</span>
+                                    }
                                 </td>
                                 <td>
                                     @if (d.IsActive)

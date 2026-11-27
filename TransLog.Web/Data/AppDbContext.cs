@@ -25,6 +25,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, CurrentCompany
 
     public DbSet<Driver> Drivers => Set<Driver>();
 
+    public DbSet<DriverVehicleLink> DriverVehicleLinks => Set<DriverVehicleLink>();
+
     protected override void OnModelCreating(ModelBuilder b)
     {
         base.OnModelCreating(b);
@@ -69,7 +71,30 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, CurrentCompany
             e.HasAlternateKey(d => new { d.CompanyId, d.Id });
             e.HasIndex(d => new { d.CompanyId, d.Cell }).IsUnique();
             e.HasIndex(d => new { d.CompanyId, d.IdNumber }).IsUnique().HasFilter("[IdNumber] IS NOT NULL");
+            e.HasOne<AppUser>().WithMany().HasForeignKey(d => d.UserId).OnDelete(DeleteBehavior.Restrict);
+            e.HasIndex(d => d.UserId).IsUnique().HasFilter("[UserId] IS NOT NULL");
             e.Ignore(d => d.FullName);
+        });
+
+        // Part 3b: links between drivers and vehicles. The database itself allows only one open link
+        // (UnlinkedAt is empty) per driver and per vehicle; history rows are never deleted.
+        b.Entity<DriverVehicleLink>(e =>
+        {
+            e.HasOne<Company>().WithMany().HasForeignKey(l => l.CompanyId).OnDelete(DeleteBehavior.Restrict);
+            e.HasOne(l => l.Driver)
+                .WithMany()
+                .HasForeignKey(l => new { l.CompanyId, l.DriverId })
+                .HasPrincipalKey(d => new { d.CompanyId, d.Id })
+                .OnDelete(DeleteBehavior.Restrict);
+            e.HasOne(l => l.Vehicle)
+                .WithMany()
+                .HasForeignKey(l => new { l.CompanyId, l.VehicleId })
+                .HasPrincipalKey(v => new { v.CompanyId, v.Id })
+                .OnDelete(DeleteBehavior.Restrict);
+            e.HasIndex(l => l.DriverId).IsUnique().HasFilter("[UnlinkedAt] IS NULL");
+            e.HasIndex(l => l.VehicleId).IsUnique().HasFilter("[UnlinkedAt] IS NULL");
+            e.HasIndex(l => new { l.CompanyId, l.VehicleId, l.LinkedAt });
+            e.HasIndex(l => new { l.CompanyId, l.DriverId, l.LinkedAt });
         });
 
         // ---- Tenant filter ----
@@ -81,6 +106,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, CurrentCompany
         b.Entity<Vehicle>().HasQueryFilter(v => v.CompanyId == CurrentCompanyId);
         b.Entity<VehicleAlias>().HasQueryFilter(a => a.CompanyId == CurrentCompanyId);
         b.Entity<Driver>().HasQueryFilter(d => d.CompanyId == CurrentCompanyId);
+        b.Entity<DriverVehicleLink>().HasQueryFilter(l => l.CompanyId == CurrentCompanyId);
     }
 }
 

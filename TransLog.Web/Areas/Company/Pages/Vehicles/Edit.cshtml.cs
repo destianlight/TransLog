@@ -11,7 +11,7 @@ namespace TransLog.Web.Areas.CompanyArea.Pages.Vehicles;
 /// The Owner or an Admin edits a vehicle of their own company and the names slips use for it.
 /// A vehicle of another company answers "not found", even when its id is typed into the address.
 /// </summary>
-public class EditModel(AppDbContext db, AuditLogger audit) : PageModel
+public class EditModel(AppDbContext db, AuditLogger audit, LinkService links) : PageModel
 {
     [BindProperty]
     public VehicleForm Form { get; set; } = new();
@@ -21,6 +21,9 @@ public class EditModel(AppDbContext db, AuditLogger audit) : PageModel
     public string Registration { get; private set; } = "";
 
     public List<VehicleAlias> Aliases { get; private set; } = [];
+
+    /// <summary>The driver who has this vehicle now, or null.</summary>
+    public string? DriverName { get; private set; }
 
     public async Task<IActionResult> OnGetAsync(int id)
     {
@@ -42,6 +45,7 @@ public class EditModel(AppDbContext db, AuditLogger audit) : PageModel
         if (!ModelState.IsValid)
             return Page();
 
+        var switchedOff = vehicle.IsActive && !Form.IsActive;
         var changes = new List<string>();
         if (vehicle.RegistrationNo != plate)
             changes.Add($"registration {vehicle.RegistrationNo} -> {plate}");
@@ -53,6 +57,10 @@ public class EditModel(AppDbContext db, AuditLogger audit) : PageModel
 
         audit.Add("VehicleUpdated", $"{plate}: {(changes.Count == 0 ? "details" : string.Join(", ", changes))}", vehicle.CompanyId);
         await db.SaveChangesAsync();
+
+        // A vehicle that is switched off has no driver.
+        if (switchedOff)
+            await links.UnlinkVehicleAsync(vehicle.Id);
 
         TempData["Message"] = $"{plate} saved.";
         return RedirectToPage("Index");
@@ -103,6 +111,11 @@ public class EditModel(AppDbContext db, AuditLogger audit) : PageModel
         Id = vehicle.Id;
         Registration = vehicle.RegistrationNo;
         Aliases = vehicle.Aliases.OrderBy(a => a.Alias).ToList();
+        var holder = await db.DriverVehicleLinks.AsNoTracking()
+            .Where(l => l.VehicleId == vehicle.Id && l.UnlinkedAt == null)
+            .Select(l => new { l.Driver!.FirstName, l.Driver!.Surname })
+            .FirstOrDefaultAsync();
+        DriverName = holder is null ? null : $"{holder.FirstName} {holder.Surname}";
         return vehicle;
     }
 }

@@ -12,6 +12,9 @@ public class IndexModel(AppDbContext db) : PageModel
 
     public DateOnly Today { get; private set; }
 
+    /// <summary>Vehicle id to the name of the driver who has it now.</summary>
+    public Dictionary<int, string> DriverNames { get; private set; } = new();
+
     public async Task OnGetAsync()
     {
         Today = Expiry.Today();
@@ -21,5 +24,12 @@ public class IndexModel(AppDbContext db) : PageModel
             .OrderByDescending(v => v.IsActive)
             .ThenBy(v => v.RegistrationNo)
             .ToListAsync();
+
+        var open = await db.DriverVehicleLinks
+            .AsNoTracking()
+            .Where(l => l.UnlinkedAt == null)
+            .Select(l => new { l.VehicleId, l.Driver!.FirstName, l.Driver!.Surname })
+            .ToListAsync();
+        DriverNames = open.ToDictionary(x => x.VehicleId, x => $"{x.FirstName} {x.Surname}");
     }
 }

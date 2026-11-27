@@ -83,11 +83,13 @@ builder.Services.AddRazorPages(o =>
     // The Owner and Admins manage drivers and vehicles.
     o.Conventions.AuthorizeAreaFolder("Company", "/Drivers", Policies.CompanyAdmin);
     o.Conventions.AuthorizeAreaFolder("Company", "/Vehicles", Policies.CompanyAdmin);
+    o.Conventions.AuthorizeAreaFolder("Company", "/Links", Policies.CompanyAdmin);
 });
 builder.Services.AddRouting(o => o.LowercaseUrls = true);
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<AuditLogger>();
 builder.Services.AddScoped<CurrentCompany>();
+builder.Services.AddScoped<TransLog.Web.Areas.CompanyArea.LinkService>();
 
 builder.Services.Configure<RequestLocalizationOptions>(o =>
 {

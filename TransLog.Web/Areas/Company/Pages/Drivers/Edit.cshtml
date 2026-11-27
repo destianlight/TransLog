@@ -9,14 +9,91 @@
         <p class="mb-2"><a asp-page="Index">&larr; Drivers</a></p>
         <h1 class="tl-h2 mb-4">@Model.DriverName</h1>
 
-        <form method="post" class="tl-card">
+        @if (TempData["Message"] is string message)
+        {
+            <div class="alert alert-success">@message</div>
+        }
+        @if (TempData["Error"] is string error)
+        {
+            <div class="alert alert-danger">@error</div>
+        }
+
+        <partial name="_LoginDetails" />
+
+        <div class="tl-card mb-4">
+            <h2 class="h5">Vehicle</h2>
+
+            @if (Model.TakeOver is { } t)
+            {
+                <div class="alert alert-warning">
+                    <p class="mb-2">
+                        <strong>@t.Vehicle</strong> is linked to <strong>@t.OtherDriver</strong>
+                        since @AppCulture.ToSast(t.Since).ToString("yyyy-MM-dd HH:mm"). Take it over?
+                    </p>
+                    <form method="post" asp-page-handler="Link" asp-route-id="@Model.Id" class="d-flex flex-wrap gap-2">
+                        <input type="hidden" name="vehicleId" value="@t.VehicleId" />
+                        <input type="hidden" name="confirm" value="true" />
+                        <button type="submit" class="btn btn-tl">Take over</button>
+                        <a class="btn btn-outline-secondary" asp-page="Edit" asp-route-id="@Model.Id">Cancel</a>
+                    </form>
+                </div>
+            }
+
+            @if (Model.Current is { } current)
+            {
+                <p>
+                    Now driving <strong>@current.Vehicle</strong> since @AppCulture.ToSast(current.Since).ToString("yyyy-MM-dd HH:mm").
+                </p>
+                <form method="post" asp-page-handler="Unlink" asp-route-id="@Model.Id" class="mb-3">
+                    <button type="submit" class="btn btn-outline-secondary btn-sm">Unlink</button>
+                </form>
+            }
+            else
+            {
+                <p class="text-body-secondary">No vehicle linked.</p>
+            }
+
+            <form method="post" asp-page-handler="Link" asp-route-id="@Model.Id" class="d-flex flex-wrap gap-2">
+                <select name="vehicleId" asp-items="Model.VehicleChoices" class="form-select w-auto flex-grow-1" aria-label="Vehicle">
+                    <option value="">Choose a vehicle</option>
+                </select>
+                <button type="submit" class="btn btn-tl">Link</button>
+            </form>
+            <p class="small mt-3 mb-0"><a asp-page="/Links/Index" asp-route-driverId="@Model.Id">Link history</a></p>
+        </div>
+
+        <form method="post" class="tl-card mb-4">
             <div asp-validation-summary="ModelOnly" class="alert alert-danger small" role="alert"></div>
             <partial name="_DriverFields" for="Form" />
             <div class="form-check form-switch mt-4">
                 <input asp-for="Form.IsActive" class="form-check-input" role="switch" />
-                <label asp-for="Form.IsActive" class="form-check-label">Driver is active (switch off when they leave; their history stays)</label>
+                <label asp-for="Form.IsActive" class="form-check-label">Driver is active (switch off when they leave; their history stays, and their login and vehicle link end)</label>
             </div>
             <button type="submit" class="btn btn-tl mt-3">Save</button>
         </form>
+
+        <div class="tl-card">
+            <h2 class="h5">Login</h2>
+            @if (Model.HasLogin)
+            {
+                <p class="small mb-0">This driver logs in with the email above. The Owner can set a new password under Users.</p>
+            }
+            else if (string.IsNullOrWhiteSpace(Model.SavedEmail))
+            {
+                <p class="small text-body-secondary mb-0">To let this driver log in and pick their own vehicle, add their email above and save. The email is the login.</p>
+            }
+            else
+            {
+                <p class="small text-body-secondary">
+                    Lets @Model.DriverName log in with <strong>@Model.SavedEmail</strong> and the password you set.
+                    You get a message to copy and send.
+                </p>
+                <form method="post" asp-page-handler="GiveLogin" asp-route-id="@Model.Id" class="d-flex flex-wrap gap-2">
+                    <input name="password" type="text" class="form-control w-auto flex-grow-1" minlength="6" required
+                           autocomplete="off" placeholder="Password (at least 6 characters)" aria-label="Password" />
+                    <button type="submit" class="btn btn-tl">Give login</button>
+                </form>
+            }
+        </div>
     </div>
 </section>

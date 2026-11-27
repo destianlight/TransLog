@@ -21,7 +21,15 @@
     </div>
     <div class="col-sm-6">
         <label asp-for="Email" class="form-label">Email (optional)</label>
-        <input asp-for="Email" class="form-control" type="email" autocomplete="off" />
+        @if (ViewData["EmailLocked"] is true)
+        {
+            <input asp-for="Email" class="form-control" type="email" autocomplete="off" readonly />
+            <div class="form-text">This is the driver's login, so it cannot be changed here.</div>
+        }
+        else
+        {
+            <input asp-for="Email" class="form-control" type="email" autocomplete="off" />
+        }
         <span asp-validation-for="Email" class="text-danger small"></span>
     </div>
     <div class="col-12">

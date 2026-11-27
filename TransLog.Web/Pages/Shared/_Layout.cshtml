@@ -78,6 +78,10 @@
                                     <li class="nav-item"><a class="nav-link" asp-area="Company" asp-page="/Drivers/Index">Drivers</a></li>
                                     <li class="nav-item"><a class="nav-link" asp-area="Company" asp-page="/Vehicles/Index">Vehicles</a></li>
                                 }
+                                if (User.IsInRole(Roles.Capturer))
+                                {
+                                    <li class="nav-item"><a class="nav-link" asp-area="Company" asp-page="/MyVehicle">My vehicle</a></li>
+                                }
                                 if (User.IsInRole(Roles.Owner))
                                 {
                                     <li class="nav-item"><a class="nav-link" asp-area="Company" asp-page="/Users/Index">Users</a></li>

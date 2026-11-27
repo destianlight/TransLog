@@ -1,0 +1,52 @@
+@page
+@model TransLog.Web.Areas.CompanyArea.Pages.Links.IndexModel
+@{
+    ViewData["Title"] = "Link history";
+}
+
+<section class="tl-section">
+    <div class="container" style="max-width: 960px">
+        <p class="mb-2">
+            @if (Model.DriverId is int d)
+            {
+                <a asp-page="/Drivers/Edit" asp-route-id="@d">&larr; Driver</a>
+            }
+            else if (Model.VehicleId is int v)
+            {
+                <a asp-page="/Vehicles/Edit" asp-route-id="@v">&larr; Vehicle</a>
+            }
+            else
+            {
+                <a asp-page="/Drivers/Index">&larr; Drivers</a>
+            }
+        </p>
+        <h1 class="tl-h2 mb-4">Link history@(Model.Filter is null ? "" : " - " + Model.Filter)</h1>
+
+        @if (Model.Rows.Count == 0)
+        {
+            <div class="tl-card"><p class="mb-0">No links yet.</p></div>
+        }
+        else
+        {
+            <div class="table-responsive">
+                <table class="table align-middle">
+                    <thead>
+                        <tr><th>From</th><th>Until</th><th>Driver</th><th>Vehicle</th><th>Linked by</th></tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var r in Model.Rows)
+                        {
+                            <tr>
+                                <td>@AppCulture.ToSast(r.LinkedAt).ToString("yyyy-MM-dd HH:mm")</td>
+                                <td>@(r.UnlinkedAt is DateTime u ? AppCulture.ToSast(u).ToString("yyyy-MM-dd HH:mm") : "Now")</td>
+                                <td>@r.Driver</td>
+                                <td>@r.Vehicle</td>
+                                <td>@r.By</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+</section>

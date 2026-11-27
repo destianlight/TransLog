@@ -110,10 +110,55 @@ public class Driver
     /// <summary>Professional driving permit.</summary>
     public DateOnly? PrdpExpiry { get; set; }
 
+    /// <summary>The driver's login (a Capturer user of the same company), when they have one.</summary>
+    public int? UserId { get; set; }
+
     public bool IsActive { get; set; } = true;
 
     /// <summary>UTC.</summary>
     public DateTime CreatedAt { get; set; }
 
     public string FullName => $"{FirstName} {Surname}".Trim();
+}
+
+/// <summary>Who made a link.</summary>
+public enum LinkSource
+{
+    /// <summary>The driver picked the vehicle on their own phone.</summary>
+    Driver = 0,
+
+    /// <summary>The Owner or an Admin did. Stored as a number; never reorder.</summary>
+    Company = 1,
+}
+
+/// <summary>
+/// One period during which a driver drove a vehicle. A link is open while UnlinkedAt is empty.
+/// Rows are never deleted, so the history shows who drove which vehicle when. The database allows
+/// one open link per driver and one per vehicle.
+/// </summary>
+public class DriverVehicleLink
+{
+    public int Id { get; set; }
+
+    public int CompanyId { get; set; }
+
+    public int DriverId { get; set; }
+
+    public Driver? Driver { get; set; }
+
+    public int VehicleId { get; set; }
+
+    public Vehicle? Vehicle { get; set; }
+
+    /// <summary>UTC.</summary>
+    public DateTime LinkedAt { get; set; }
+
+    /// <summary>UTC. Empty while the link is open.</summary>
+    public DateTime? UnlinkedAt { get; set; }
+
+    public LinkSource LinkedBy { get; set; }
+
+    public int? LinkedByUserId { get; set; }
+
+    public int? UnlinkedByUserId { get; set; }
 }
