@@ -20,6 +20,22 @@
 
         <partial name="_LoginDetails" />
 
+        @if (Model.Photo is { } photo)
+        {
+            <div class="tl-card mb-4">
+                <h2 class="h5">Photo</h2>
+                @Html.AntiForgeryToken()
+                <partial name="_DriverPhotoForm" model="photo" />
+                @if (photo.PhotoPath is not null)
+                {
+                    <form method="post" asp-page-handler="RemovePhoto" asp-route-id="@Model.Id" class="text-center mt-3"
+                          onsubmit="return confirm('Remove this photo?');">
+                        <button type="submit" class="btn btn-sm btn-outline-danger">@Icons.Svg("trash") Remove photo</button>
+                    </form>
+                }
+            </div>
+        }
+
         <div class="tl-card mb-4">
             <h2 class="h5">Vehicle</h2>
 
@@ -96,3 +112,7 @@
         </div>
     </div>
 </section>
+
+@section Scripts {
+    <script src="~/resources/page-driver-photo.js" asp-append-version="true"></script>
+}

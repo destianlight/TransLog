@@ -1,0 +1,29 @@
+@model TransLog.Web.Fleet.DriverPhotoBox
+@* Profile photo box (Part 4c): the current photo, then phone camera or gallery, turn, Save. Driven by page-driver-photo.js.
+   The page must carry @Html.AntiForgeryToken() and load the script. *@
+<div class="text-center" data-photo-form data-url="@Model.PostUrl" data-done="@Model.DoneUrl">
+    <div class="mb-3">
+        <span data-current>@TransLog.Web.Fleet.DriverPhotos.Avatar(Model.DriverId, Model.PhotoPath, Model.Name, "tl-avatar-xl")</span>
+        <canvas class="tl-avatar tl-avatar-xl" data-preview hidden></canvas>
+    </div>
+
+    <div class="d-flex flex-wrap justify-content-center gap-2" data-pick>
+        <label class="btn btn-tl">
+            @Icons.Svg("camera-fill") Take a photo
+            <input type="file" accept="image/*" capture="@Model.Camera" class="visually-hidden" />
+        </label>
+        <label class="btn btn-outline-secondary">
+            @Icons.Svg("images") Choose from gallery
+            <input type="file" accept="image/*" class="visually-hidden" />
+        </label>
+    </div>
+
+    <div class="d-flex flex-wrap justify-content-center align-items-center gap-2" data-review hidden>
+        <button type="button" class="btn btn-outline-secondary" data-act="left" aria-label="Turn left">@Icons.Svg("arrow-counterclockwise")</button>
+        <button type="button" class="btn btn-outline-secondary" data-act="again">Choose again</button>
+        <button type="button" class="btn btn-tl" data-save>Save</button>
+        <button type="button" class="btn btn-outline-secondary" data-act="right" aria-label="Turn right">@Icons.Svg("arrow-clockwise")</button>
+    </div>
+
+    <div class="small mt-2 text-body-secondary" data-status></div>
+</div>

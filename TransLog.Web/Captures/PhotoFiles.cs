@@ -21,6 +21,46 @@ public static class PhotoFiles
             SendAsync(id, thumb: false, ctx, db, files)).RequireAuthorization();
         app.MapGet("/files/capture/{id:int}/thumb", (int id, HttpContext ctx, AppDbContext db, IFileStore files) =>
             SendAsync(id, thumb: true, ctx, db, files)).RequireAuthorization();
+
+        // Part 4c: driver profile photos, for the driver himself and every office user of his company.
+        app.MapGet("/files/driver/{id:int}", (int id, HttpContext ctx, AppDbContext db, IFileStore files) =>
+            SendDriverAsync(id, thumb: false, ctx, db, files)).RequireAuthorization();
+        app.MapGet("/files/driver/{id:int}/thumb", (int id, HttpContext ctx, AppDbContext db, IFileStore files) =>
+            SendDriverAsync(id, thumb: true, ctx, db, files)).RequireAuthorization();
+    }
+
+    private static async Task<IResult> SendDriverAsync(int driverId, bool thumb, HttpContext ctx, AppDbContext db, IFileStore files)
+    {
+        var user = ctx.User;
+        if (user.GetCompanyId() is null)
+            return Results.NotFound();
+
+        // The tenant filter keeps this inside the user's own company.
+        var drivers = db.Drivers.AsNoTracking().Where(d => d.Id == driverId);
+        if (user.IsInRole(Roles.Driver))
+        {
+            var userId = user.GetUserId();
+            drivers = drivers.Where(d => d.UserId == userId);
+        }
+        else if (!Roles.Company.Any(user.IsInRole))
+        {
+            return Results.NotFound();
+        }
+
+        var path = await drivers.Select(d => d.PhotoPath).FirstOrDefaultAsync();
+        if (path is null)
+            return Results.NotFound();
+        var stream = (thumb ? files.OpenRead(TransLog.Web.Fleet.DriverPhotos.ThumbOf(path)) : null) ?? files.OpenRead(path);
+        return stream is null ? Results.NotFound() : Send(ctx, stream);
+    }
+
+    private static IResult Send(HttpContext ctx, Stream stream)
+    {
+        // A stored photo never changes (a new photo is a new file and a new address), so the phone may keep it;
+        // "private" keeps it out of shared caches.
+        ctx.Response.Headers.CacheControl = "private, max-age=604800, immutable";
+        ctx.Response.Headers.XContentTypeOptions = "nosniff";
+        return Results.File(stream, "image/jpeg");
     }
 
     private static async Task<IResult> SendAsync(int imageId, bool thumb, HttpContext ctx, AppDbContext db, IFileStore files)

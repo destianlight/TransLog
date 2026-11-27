@@ -107,6 +107,8 @@ builder.Services.AddScoped<AreaBadges>();
 // Part 4a: uploaded photos on disk (outside wwwroot) and saving captures.
 builder.Services.AddSingleton<IFileStore, LocalFileStore>();
 builder.Services.AddScoped<CaptureService>();
+// Part 4c: driver profile photos.
+builder.Services.AddScoped<TransLog.Web.Fleet.DriverPhotos>();
 
 builder.Services.Configure<RequestLocalizationOptions>(o =>
 {

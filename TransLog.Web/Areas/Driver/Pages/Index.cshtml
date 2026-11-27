@@ -7,8 +7,23 @@
 @Html.AntiForgeryToken()
 <section class="tl-section pt-4">
     <div class="container" style="max-width: 560px">
-        <p class="tl-eyebrow mb-1">@Model.CompanyName</p>
-        <h1 class="tl-h2 mb-4">Hi, @User.GetFullName()</h1>
+        <div class="d-flex align-items-center gap-3 mb-4">
+            @if (Model.HasDriver)
+            {
+                <a class="tl-avatar-link" asp-page="/Photo" aria-label="My photo">
+                    @TransLog.Web.Fleet.DriverPhotos.Avatar(Model.DriverId, Model.PhotoPath, User.GetFullName(), "tl-avatar-lg")
+                    <span class="tl-avatar-edit">@Icons.Svg("camera-fill")</span>
+                </a>
+            }
+            <div class="min-w-0">
+                <p class="tl-eyebrow mb-1">@Model.CompanyName</p>
+                <h1 class="tl-h2 mb-0">Hi, @User.GetFullName()</h1>
+                @if (Model.HasDriver && Model.PhotoPath is null)
+                {
+                    <a class="small" asp-page="/Photo">Add your photo</a>
+                }
+            </div>
+        </div>
 
         @if (!Model.HasDriver)
         {

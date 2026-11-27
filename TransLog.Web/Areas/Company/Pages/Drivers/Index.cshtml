@@ -34,8 +34,13 @@
                         {
                             <tr>
                                 <td>
-                                    <a asp-page="Edit" asp-route-id="@d.Id" class="fw-semibold">@d.FullName</a>
-                                    <div class="small text-body-secondary">@d.Cell</div>
+                                    <div class="d-flex align-items-center gap-2">
+                                        @DriverPhotos.Avatar(d.Id, d.PhotoPath, d.FullName)
+                                        <div>
+                                            <a asp-page="Edit" asp-route-id="@d.Id" class="fw-semibold">@d.FullName</a>
+                                            <div class="small text-body-secondary">@d.Cell</div>
+                                        </div>
+                                    </div>
                                 </td>
                                 <td>
                                     @if (!string.IsNullOrEmpty(d.LicenceCode))

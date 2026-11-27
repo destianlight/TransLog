@@ -126,6 +126,13 @@ public class Driver
     /// <summary>The driver's login (a Driver user of the same company), when they have one.</summary>
     public int? UserId { get; set; }
 
+    /// <summary>
+    /// Profile photo (Part 4c): relative path under the file store, for example "drivers/12/34/abc.jpg"; the small copy is
+    /// the same name ending in "-t.jpg". Square, 600 px. Null when there is none. See Fleet/DriverPhotos.cs.
+    /// </summary>
+    [MaxLength(200)]
+    public string? PhotoPath { get; set; }
+
     public bool IsActive { get; set; } = true;
 
     /// <summary>UTC.</summary>

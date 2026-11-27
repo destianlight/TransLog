@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using TransLog.Web.Data;
+using TransLog.Web.Fleet;
 using TransLog.Web.Security;
 
 namespace TransLog.Web.Areas.CompanyArea.Pages.Drivers;
@@ -13,8 +14,13 @@ namespace TransLog.Web.Areas.CompanyArea.Pages.Drivers;
 /// The Owner or an Admin edits a driver of their own company, links the driver to a vehicle and gives the driver a login.
 /// A driver of another company answers "not found", even when the id is typed into the address.
 /// </summary>
-public class EditModel(AppDbContext db, AuditLogger audit, UserManager<AppUser> users, LinkService links) : PageModel
+[RequestSizeLimit(3 * 1024 * 1024)]
+[RequestFormLimits(MultipartBodyLengthLimit = 3 * 1024 * 1024)]
+public class EditModel(AppDbContext db, AuditLogger audit, UserManager<AppUser> users, LinkService links, DriverPhotos photos) : PageModel
 {
+    /// <summary>Profile photo box (Part 4c): Owner and Admin add, replace or remove the driver's photo.</summary>
+    public DriverPhotoBox? Photo { get; private set; }
+
     [BindProperty]
     public DriverForm Form { get; set; } = new();
 
@@ -187,6 +193,30 @@ public class EditModel(AppDbContext db, AuditLogger audit, UserManager<AppUser> 
         return RedirectToPage(new { id });
     }
 
+    /// <summary>Receives a cropped photo from page-driver-photo.js (Part 4c). JSON { ok } or, with status 400, { error }.</summary>
+    public async Task<IActionResult> OnPostPhotoAsync(int id)
+    {
+        if (await LoadAsync(id) is not { } driver)
+            return NotFound();
+        var (photo, thumb, error) = await DriverPhotos.ReadAsync(Request);
+        if (photo is null)
+            return BadRequest(new { error });
+        error = await photos.SaveAsync(driver, photo, thumb, byDriver: false);
+        if (error is not null)
+            return BadRequest(new { error });
+        TempData["Message"] = "Photo saved.";
+        return new JsonResult(new { ok = true });
+    }
+
+    public async Task<IActionResult> OnPostRemovePhotoAsync(int id)
+    {
+        if (await LoadAsync(id) is not { } driver)
+            return NotFound();
+        await photos.RemoveAsync(driver);
+        TempData["Message"] = "Photo removed.";
+        return RedirectToPage(new { id });
+    }
+
     /// <summary>The driver, only when they belong to this company (the tenant filter decides).</summary>
     private async Task<Driver?> LoadAsync(int id)
     {
@@ -201,6 +231,9 @@ public class EditModel(AppDbContext db, AuditLogger audit, UserManager<AppUser> 
         SavedCell = driver.Cell;
         Current = await links.CurrentAsync(driver.Id);
         VehicleChoices = await links.VehicleChoicesAsync();
+        Photo = new DriverPhotoBox(driver.Id, driver.PhotoPath, driver.FullName,
+            Url.Page("/Drivers/Edit", "Photo", new { area = "Company", id = driver.Id })!,
+            Url.Page("/Drivers/Edit", null, new { area = "Company", id = driver.Id })!, "environment");
         return driver;
     }
 }

@@ -16,16 +16,24 @@ public class IndexModel(AppDbContext db, LinkService links) : PageModel
 
     public bool HasDriver { get; private set; }
 
+    public int DriverId { get; private set; }
+
+    /// <summary>Profile photo (Part 4c); null shows the initials and "Add your photo".</summary>
+    public string? PhotoPath { get; private set; }
+
     public async Task OnGetAsync()
     {
         CompanyName = User.GetCompanyName();
         var userId = User.GetUserId();
         // The tenant filter keeps this inside the driver's own company.
-        var driverId = await db.Drivers.Where(d => d.UserId == userId).Select(d => (int?)d.Id).FirstOrDefaultAsync();
-        if (driverId is int id)
+        var driver = await db.Drivers.AsNoTracking().Where(d => d.UserId == userId)
+            .Select(d => new { d.Id, d.PhotoPath }).FirstOrDefaultAsync();
+        if (driver is not null)
         {
             HasDriver = true;
-            Current = await links.CurrentAsync(id);
+            DriverId = driver.Id;
+            PhotoPath = driver.PhotoPath;
+            Current = await links.CurrentAsync(driver.Id);
         }
     }
 }

@@ -1,0 +1,31 @@
+@page
+@model PhotoModel
+@{
+    ViewData["Title"] = "My photo";
+}
+
+<section class="tl-section pt-4">
+    <div class="container" style="max-width: 560px">
+        @Html.AntiForgeryToken()
+        <p class="mb-2"><a asp-page="/Index">&larr; Home</a></p>
+        <h1 class="tl-h2 mb-2">My photo</h1>
+        <p class="text-body-secondary mb-4">Your company sees this photo next to your name. Face the camera in good light.</p>
+
+        @if (Model.Box is null)
+        {
+            <div class="tl-card">
+                <p class="mb-0">Your login is not linked to a driver, or your driver profile is switched off. Ask your company.</p>
+            </div>
+        }
+        else
+        {
+            <div class="tl-card">
+                <partial name="_DriverPhotoForm" model="Model.Box" />
+            </div>
+        }
+    </div>
+</section>
+
+@section Scripts {
+    <script src="~/resources/page-driver-photo.js" asp-append-version="true"></script>
+}
