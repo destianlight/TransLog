@@ -174,13 +174,14 @@ public class Part3bTests(TestApp app) : IClassFixture<TestApp>
         await Scenario.PostToAsync(owner, $"/company/drivers/edit/{driver}",
             $"/company/drivers/edit/{driver}?handler=GiveLogin", new() { ["password"] = "driver1" });
 
-        // No Form.IsActive field means the switch is off.
+        // A browser sends the switch's hidden "false" when it is off.
         var off = await owner.PostFormAsync($"/company/drivers/edit/{driver}", new()
         {
             ["Form.FirstName"] = "Eve",
             ["Form.Surname"] = "Linksix",
             ["Form.Cell"] = "0821110007",
             ["Form.Email"] = "eve@link-six.test",
+            ["Form.IsActive"] = "false",
         });
         Assert.Equal(HttpStatusCode.Redirect, off.StatusCode);
 
