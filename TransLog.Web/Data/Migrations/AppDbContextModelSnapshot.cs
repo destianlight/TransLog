@@ -386,9 +386,14 @@ namespace TransLog.Web.Data.Migrations
                         .HasMaxLength(60)
                         .HasColumnType("nvarchar(60)");
 
+                    b.Property<int?>("UserId")
+                        .HasColumnType("int");
+
                     b.HasKey("Id");
 
-                    b.HasAlternateKey("CompanyId", "Id");
+                    b.HasIndex("UserId")
+                        .IsUnique()
+                        .HasFilter("[UserId] IS NOT NULL");
 
                     b.HasIndex("CompanyId", "Cell")
                         .IsUnique();
@@ -398,6 +403,55 @@ namespace TransLog.Web.Data.Migrations
                         .HasFilter("[IdNumber] IS NOT NULL");
 
                     b.ToTable("Drivers");
+                });
+
+            modelBuilder.Entity("TransLog.Web.Data.DriverVehicleLink", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("CompanyId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("DriverId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("LinkedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("LinkedBy")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("LinkedByUserId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("UnlinkedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int?>("UnlinkedByUserId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("VehicleId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("DriverId")
+                        .IsUnique()
+                        .HasFilter("[UnlinkedAt] IS NULL");
+
+                    b.HasIndex("VehicleId")
+                        .IsUnique()
+                        .HasFilter("[UnlinkedAt] IS NULL");
+
+                    b.HasIndex("CompanyId", "DriverId", "LinkedAt");
+
+                    b.HasIndex("CompanyId", "VehicleId", "LinkedAt");
+
+                    b.ToTable("DriverVehicleLinks");
                 });
 
             modelBuilder.Entity("TransLog.Web.Data.Vehicle", b =>
@@ -563,6 +617,38 @@ namespace TransLog.Web.Data.Migrations
                         .HasForeignKey("CompanyId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
+
+                    b.HasOne("TransLog.Web.Data.AppUser", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Restrict);
+                });
+
+            modelBuilder.Entity("TransLog.Web.Data.DriverVehicleLink", b =>
+                {
+                    b.HasOne("TransLog.Web.Data.Company", null)
+                        .WithMany()
+                        .HasForeignKey("CompanyId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("TransLog.Web.Data.Driver", "Driver")
+                        .WithMany()
+                        .HasForeignKey("CompanyId", "DriverId")
+                        .HasPrincipalKey("CompanyId", "Id")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("TransLog.Web.Data.Vehicle", "Vehicle")
+                        .WithMany()
+                        .HasForeignKey("CompanyId", "VehicleId")
+                        .HasPrincipalKey("CompanyId", "Id")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Driver");
+
+                    b.Navigation("Vehicle");
                 });
 
             modelBuilder.Entity("TransLog.Web.Data.Vehicle", b =>
