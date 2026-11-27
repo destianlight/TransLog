@@ -54,7 +54,7 @@ public class EditModel(AppDbContext db, UserManager<AppUser> users, AuditLogger 
 
         if (wasActive && !IsActive)
         {
-            // Log out everyone in the company within 5 minutes.
+            // Log out everyone in the company within 1 minute.
             foreach (var user in await db.Users.Where(u => u.CompanyId == id).ToListAsync())
                 await users.UpdateSecurityStampAsync(user);
         }

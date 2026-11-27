@@ -117,7 +117,7 @@ public class EditModel(AppDbContext db, UserManager<AppUser> users, AuditLogger 
         }
 
         if (switchedOff)
-            await users.UpdateSecurityStampAsync(user); // logged out within 5 minutes
+            await users.UpdateSecurityStampAsync(user); // logged out within 1 minute
 
         audit.Add("UserUpdated", $"{email}: {(changes.Count == 0 ? "details" : string.Join(", ", changes))}", user.CompanyId);
         await db.SaveChangesAsync();

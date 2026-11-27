@@ -88,7 +88,7 @@ public class EditModel(AppDbContext db, AuditLogger audit, UserManager<AppUser> 
                 return Page();
             }
             if (wasActive != login.IsActive)
-                await users.UpdateSecurityStampAsync(login); // logged out within 5 minutes
+                await users.UpdateSecurityStampAsync(login); // logged out within 1 minute
         }
 
         driver.Cell = cell;

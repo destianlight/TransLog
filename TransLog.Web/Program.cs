@@ -1,5 +1,8 @@
 using System.Globalization;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.DataProtection;
+using Microsoft.AspNetCore.DataProtection.KeyManagement;
+using Microsoft.AspNetCore.DataProtection.Repositories;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Localization;
 using Microsoft.EntityFrameworkCore;
@@ -69,8 +72,25 @@ builder.Services.ConfigureApplicationCookie(o =>
     };
 });
 
-// A deactivated user or company is logged out within 5 minutes.
-builder.Services.Configure<SecurityStampValidatorOptions>(o => o.ValidationInterval = TimeSpan.FromMinutes(5));
+// The login cookie is checked against the database every minute (setting Login:RecheckSeconds, default 60).
+// A deactivated user or company, a changed password, or a login on another device logs this one out
+// within that time: each login gets a new security stamp (Login.cshtml.cs), so one account = one device.
+builder.Services.AddOptions<SecurityStampValidatorOptions>()
+    .Configure<IConfiguration>((o, config) =>
+        o.ValidationInterval = TimeSpan.FromSeconds(Math.Max(0, config.GetValue("Login:RecheckSeconds", 60))));
+
+// ---- Keys that lock the login cookie ----
+// Saved as files in App_Data/keys (setting DataProtection:KeysPath), so logins survive app restarts and
+// deploys ("Keep me logged in"). Without this the keys live only in memory and every app pool recycle
+// on Plesk logs everybody out. Deploy never deletes App_Data; IIS never serves it. Never commit the keys.
+builder.Services.AddDataProtection().SetApplicationName("TransLog");
+builder.Services.AddOptions<KeyManagementOptions>()
+    .Configure<IConfiguration, IWebHostEnvironment, ILoggerFactory>((o, config, env, logs) =>
+    {
+        var path = config["DataProtection:KeysPath"];
+        var folder = string.IsNullOrWhiteSpace(path) ? Path.Combine(env.ContentRootPath, "App_Data", "keys") : path;
+        o.XmlRepository = new FileSystemXmlRepository(new DirectoryInfo(folder), logs);
+    });
 
 // ---- Who may open what: everything needs a login unless a page says [AllowAnonymous] ----
 builder.Services.AddAuthorizationBuilder()

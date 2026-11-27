@@ -73,7 +73,7 @@ public static class ClaimsPrincipalExtensions
 
 /// <summary>
 /// Adds the company id, company name and full name to the login cookie. The cookie is rebuilt every
-/// 5 minutes (security stamp check), so a renamed company shows its new name soon after.
+/// minute (security stamp check), so a renamed company shows its new name soon after.
 /// </summary>
 public class AppClaimsFactory(UserManager<AppUser> users, RoleManager<AppRole> roles, IOptions<IdentityOptions> options, AppDbContext db)
     : UserClaimsPrincipalFactory<AppUser, AppRole>(users, roles, options)
