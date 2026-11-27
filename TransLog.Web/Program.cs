@@ -69,7 +69,8 @@ builder.Services.AddAuthorizationBuilder()
     .SetFallbackPolicy(new AuthorizationPolicyBuilder().RequireAuthenticatedUser().Build())
     .AddPolicy(Policies.SysAdmin, p => p.RequireRole(Roles.SysAdmin))
     .AddPolicy(Policies.CompanyMember, p => p.RequireRole(Roles.Company).RequireClaim(AppClaims.CompanyId))
-    .AddPolicy(Policies.CompanyOwner, p => p.RequireRole(Roles.Owner).RequireClaim(AppClaims.CompanyId));
+    .AddPolicy(Policies.CompanyOwner, p => p.RequireRole(Roles.Owner).RequireClaim(AppClaims.CompanyId))
+    .AddPolicy(Policies.CompanyAdmin, p => p.RequireRole(Roles.Owner, Roles.Admin).RequireClaim(AppClaims.CompanyId));
 
 builder.Services.AddRazorPages(o =>
 {
@@ -79,6 +80,9 @@ builder.Services.AddRazorPages(o =>
     o.Conventions.AuthorizeAreaFolder("Company", "/Users", Policies.CompanyOwner);
     o.Conventions.AuthorizeAreaPage("Company", "/Settings", Policies.CompanyOwner);
     o.Conventions.AuthorizeAreaPage("Company", "/Activity", Policies.CompanyOwner);
+    // The Owner and Admins manage drivers and vehicles.
+    o.Conventions.AuthorizeAreaFolder("Company", "/Drivers", Policies.CompanyAdmin);
+    o.Conventions.AuthorizeAreaFolder("Company", "/Vehicles", Policies.CompanyAdmin);
 });
 builder.Services.AddRouting(o => o.LowercaseUrls = true);
 builder.Services.AddHttpContextAccessor();

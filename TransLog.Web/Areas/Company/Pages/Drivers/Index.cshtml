@@ -1,0 +1,65 @@
+@page
+@model TransLog.Web.Areas.CompanyArea.Pages.Drivers.IndexModel
+@{
+    ViewData["Title"] = "Drivers";
+}
+
+<section class="tl-section">
+    <div class="container" style="max-width: 960px">
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+            <h1 class="tl-h2 mb-0">Drivers</h1>
+            <a class="btn btn-tl" asp-page="Create">Add driver</a>
+        </div>
+
+        @if (TempData["Message"] is string message)
+        {
+            <div class="alert alert-success">@message</div>
+        }
+
+        @if (Model.Drivers.Count == 0)
+        {
+            <div class="tl-card">
+                <p class="mb-0">No drivers yet. Add your first one with the button above.</p>
+            </div>
+        }
+        else
+        {
+            <div class="table-responsive">
+                <table class="table align-middle">
+                    <thead>
+                        <tr><th>Driver</th><th>Licence and permit</th><th>Status</th></tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var d in Model.Drivers)
+                        {
+                            <tr>
+                                <td>
+                                    <a asp-page="Edit" asp-route-id="@d.Id" class="fw-semibold">@d.FullName</a>
+                                    <div class="small text-body-secondary">@d.Cell</div>
+                                </td>
+                                <td>
+                                    @if (!string.IsNullOrEmpty(d.LicenceCode))
+                                    {
+                                        <div class="small"><span class="text-body-secondary">Code</span> @d.LicenceCode</div>
+                                    }
+                                    @ExpiryHtml.Line("Licence", d.LicenceExpiry, Model.Today)
+                                    @ExpiryHtml.Line("PrDP", d.PrdpExpiry, Model.Today)
+                                </td>
+                                <td>
+                                    @if (d.IsActive)
+                                    {
+                                        <span class="badge text-bg-success">Active</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge text-bg-secondary">Off</span>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+</section>

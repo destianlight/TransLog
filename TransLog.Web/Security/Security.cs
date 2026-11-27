@@ -34,6 +34,9 @@ public static class Policies
 
     /// <summary>A company Owner: users, settings and activity.</summary>
     public const string CompanyOwner = "CompanyOwner";
+
+    /// <summary>A company Owner or Admin: drivers and vehicles.</summary>
+    public const string CompanyAdmin = "CompanyAdmin";
 }
 
 public static class AppClaims

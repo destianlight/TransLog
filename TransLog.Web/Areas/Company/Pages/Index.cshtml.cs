@@ -13,6 +13,9 @@ public class IndexModel(AppDbContext db) : PageModel
 
     public bool IsOwner => User.IsInRole(Roles.Owner);
 
+    /// <summary>The Owner and Admins manage drivers and vehicles.</summary>
+    public bool IsFleetAdmin => User.IsInRole(Roles.Owner) || User.IsInRole(Roles.Admin);
+
     public async Task<IActionResult> OnGetAsync()
     {
         if (User.GetCompanyId() is not int companyId || await db.Companies.FindAsync(companyId) is not { } company)

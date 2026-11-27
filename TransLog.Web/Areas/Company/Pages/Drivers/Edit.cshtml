@@ -1,0 +1,22 @@
+@page "{id:int}"
+@model TransLog.Web.Areas.CompanyArea.Pages.Drivers.EditModel
+@{
+    ViewData["Title"] = Model.DriverName;
+}
+
+<section class="tl-section">
+    <div class="container" style="max-width: 720px">
+        <p class="mb-2"><a asp-page="Index">&larr; Drivers</a></p>
+        <h1 class="tl-h2 mb-4">@Model.DriverName</h1>
+
+        <form method="post" class="tl-card">
+            <div asp-validation-summary="ModelOnly" class="alert alert-danger small" role="alert"></div>
+            <partial name="_DriverFields" for="Form" />
+            <div class="form-check form-switch mt-4">
+                <input asp-for="Form.IsActive" class="form-check-input" role="switch" />
+                <label asp-for="Form.IsActive" class="form-check-label">Driver is active (switch off when they leave; their history stays)</label>
+            </div>
+            <button type="submit" class="btn btn-tl mt-3">Save</button>
+        </form>
+    </div>
+</section>

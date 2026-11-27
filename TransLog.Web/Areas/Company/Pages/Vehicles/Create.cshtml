@@ -1,0 +1,18 @@
+@page
+@model TransLog.Web.Areas.CompanyArea.Pages.Vehicles.CreateModel
+@{
+    ViewData["Title"] = "Add vehicle";
+}
+
+<section class="tl-section">
+    <div class="container" style="max-width: 720px">
+        <p class="mb-2"><a asp-page="Index">&larr; Vehicles</a></p>
+        <h1 class="tl-h2 mb-4">Add vehicle</h1>
+
+        <form method="post" class="tl-card">
+            <div asp-validation-summary="ModelOnly" class="alert alert-danger small" role="alert"></div>
+            <partial name="_VehicleFields" for="Form" />
+            <button type="submit" class="btn btn-tl mt-4">Add vehicle</button>
+        </form>
+    </div>
+</section>

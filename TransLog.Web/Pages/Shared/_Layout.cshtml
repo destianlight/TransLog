@@ -73,6 +73,11 @@
                             else if (User.GetCompanyId() is not null)
                             {
                                 <li class="nav-item"><a class="nav-link" asp-area="Company" asp-page="/Index">Home</a></li>
+                                if (User.IsInRole(Roles.Owner) || User.IsInRole(Roles.Admin))
+                                {
+                                    <li class="nav-item"><a class="nav-link" asp-area="Company" asp-page="/Drivers/Index">Drivers</a></li>
+                                    <li class="nav-item"><a class="nav-link" asp-area="Company" asp-page="/Vehicles/Index">Vehicles</a></li>
+                                }
                                 if (User.IsInRole(Roles.Owner))
                                 {
                                     <li class="nav-item"><a class="nav-link" asp-area="Company" asp-page="/Users/Index">Users</a></li>

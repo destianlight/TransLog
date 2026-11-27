@@ -1,0 +1,56 @@
+@model DriverForm
+@{
+    var codeItems = DriverOptions.LicenceCodes.Select(c => new SelectListItem(c, c)).ToList();
+}
+<div class="row g-3">
+    <div class="col-sm-6">
+        <label asp-for="FirstName" class="form-label">First name</label>
+        <input asp-for="FirstName" class="form-control" autocomplete="off" />
+        <span asp-validation-for="FirstName" class="text-danger small"></span>
+    </div>
+    <div class="col-sm-6">
+        <label asp-for="Surname" class="form-label">Surname</label>
+        <input asp-for="Surname" class="form-control" autocomplete="off" />
+        <span asp-validation-for="Surname" class="text-danger small"></span>
+    </div>
+    <div class="col-sm-6">
+        <label asp-for="Cell" class="form-label">Cell number</label>
+        <input asp-for="Cell" class="form-control" type="tel" inputmode="tel" autocomplete="off" />
+        <div class="form-text">For example 082 123 4567. +27 numbers are changed to 0 numbers.</div>
+        <span asp-validation-for="Cell" class="text-danger small"></span>
+    </div>
+    <div class="col-sm-6">
+        <label asp-for="Email" class="form-label">Email (optional)</label>
+        <input asp-for="Email" class="form-control" type="email" autocomplete="off" />
+        <span asp-validation-for="Email" class="text-danger small"></span>
+    </div>
+    <div class="col-12">
+        <label asp-for="Address" class="form-label">Address (optional)</label>
+        <textarea asp-for="Address" class="form-control" rows="2"></textarea>
+    </div>
+    <div class="col-sm-6">
+        <label asp-for="IdNumber" class="form-label">ID number (optional)</label>
+        <input asp-for="IdNumber" class="form-control" inputmode="numeric" autocomplete="off" />
+        <div class="form-text">Personal information. Only your Owner and Admins can see it.</div>
+        <span asp-validation-for="IdNumber" class="text-danger small"></span>
+    </div>
+    <div class="col-sm-6">
+        <label asp-for="LicenceNo" class="form-label">Licence number (optional)</label>
+        <input asp-for="LicenceNo" class="form-control" autocomplete="off" />
+    </div>
+    <div class="col-sm-4">
+        <label asp-for="LicenceCode" class="form-label">Licence code</label>
+        <select asp-for="LicenceCode" asp-items="codeItems" class="form-select">
+            <option value="">Not set</option>
+        </select>
+    </div>
+    <div class="col-sm-4">
+        <label asp-for="LicenceExpiry" class="form-label">Licence expires</label>
+        <input asp-for="LicenceExpiry" class="form-control" type="date" asp-format="{0:yyyy-MM-dd}" />
+    </div>
+    <div class="col-sm-4">
+        <label asp-for="PrdpExpiry" class="form-label">PrDP expires</label>
+        <input asp-for="PrdpExpiry" class="form-control" type="date" asp-format="{0:yyyy-MM-dd}" />
+        <div class="form-text">Professional driving permit.</div>
+    </div>
+</div>

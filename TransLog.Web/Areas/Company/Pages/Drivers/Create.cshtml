@@ -1,0 +1,18 @@
+@page
+@model TransLog.Web.Areas.CompanyArea.Pages.Drivers.CreateModel
+@{
+    ViewData["Title"] = "Add driver";
+}
+
+<section class="tl-section">
+    <div class="container" style="max-width: 720px">
+        <p class="mb-2"><a asp-page="Index">&larr; Drivers</a></p>
+        <h1 class="tl-h2 mb-4">Add driver</h1>
+
+        <form method="post" class="tl-card">
+            <div asp-validation-summary="ModelOnly" class="alert alert-danger small" role="alert"></div>
+            <partial name="_DriverFields" for="Form" />
+            <button type="submit" class="btn btn-tl mt-4">Add driver</button>
+        </form>
+    </div>
+</section>

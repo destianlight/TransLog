@@ -34,13 +34,33 @@
                     </a>
                 </div>
             }
-            <div class="col-md-4">
-                <div class="tl-card h-100">
-                    <svg class="tl-icon" aria-hidden="true"><use href="/resources/icons.svg#truck"></use></svg>
-                    <h2 class="h6 mt-2">Drivers and vehicles</h2>
-                    <p class="small text-body-secondary mb-0">Your fleet and who drives what. Coming in Part 3.</p>
+            @if (Model.IsFleetAdmin)
+            {
+                <div class="col-md-4">
+                    <a class="tl-card tl-card-link d-block h-100" asp-page="/Drivers/Index">
+                        <svg class="tl-icon" aria-hidden="true"><use href="/resources/icons.svg#person"></use></svg>
+                        <h2 class="h6 mt-2">Drivers</h2>
+                        <p class="small text-body-secondary mb-0">Your drivers, licences and permit expiry dates.</p>
+                    </a>
                 </div>
-            </div>
+                <div class="col-md-4">
+                    <a class="tl-card tl-card-link d-block h-100" asp-page="/Vehicles/Index">
+                        <svg class="tl-icon" aria-hidden="true"><use href="/resources/icons.svg#truck"></use></svg>
+                        <h2 class="h6 mt-2">Vehicles</h2>
+                        <p class="small text-body-secondary mb-0">Registrations, names used on slips, disc and roadworthy dates.</p>
+                    </a>
+                </div>
+            }
+            else
+            {
+                <div class="col-md-4">
+                    <div class="tl-card h-100">
+                        <svg class="tl-icon" aria-hidden="true"><use href="/resources/icons.svg#truck"></use></svg>
+                        <h2 class="h6 mt-2">My vehicle</h2>
+                        <p class="small text-body-secondary mb-0">Pick the vehicle you drive. Coming soon.</p>
+                    </div>
+                </div>
+            }
             <div class="col-md-4">
                 <div class="tl-card h-100">
                     <svg class="tl-icon" aria-hidden="true"><use href="/resources/icons.svg#camera"></use></svg>

@@ -1,0 +1,72 @@
+@page
+@model TransLog.Web.Areas.CompanyArea.Pages.Vehicles.IndexModel
+@{
+    ViewData["Title"] = "Vehicles";
+}
+
+<section class="tl-section">
+    <div class="container" style="max-width: 960px">
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+            <h1 class="tl-h2 mb-0">Vehicles</h1>
+            <a class="btn btn-tl" asp-page="Create">Add vehicle</a>
+        </div>
+
+        @if (TempData["Message"] is string message)
+        {
+            <div class="alert alert-success">@message</div>
+        }
+
+        @if (Model.Vehicles.Count == 0)
+        {
+            <div class="tl-card">
+                <p class="mb-0">No vehicles yet. Add your first one with the button above.</p>
+            </div>
+        }
+        else
+        {
+            <div class="table-responsive">
+                <table class="table align-middle">
+                    <thead>
+                        <tr><th>Vehicle</th><th>Details</th><th>Dates</th><th>Status</th></tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var v in Model.Vehicles)
+                        {
+                            <tr>
+                                <td>
+                                    <a asp-page="Edit" asp-route-id="@v.Id" class="fw-semibold">@v.RegistrationNo</a>
+                                    @if (!string.IsNullOrEmpty(v.FleetNo))
+                                    {
+                                        <div class="small text-body-secondary">Fleet no. @v.FleetNo</div>
+                                    }
+                                    @if (v.Aliases.Count > 0)
+                                    {
+                                        <div class="small text-body-secondary">Also: @(string.Join(", ", v.Aliases.OrderBy(a => a.Alias).Select(a => a.Alias)))</div>
+                                    }
+                                </td>
+                                <td>
+                                    <div>@(string.Join(" ", new[] { v.Make, v.Model, v.Year?.ToString() }.Where(x => !string.IsNullOrWhiteSpace(x))))</div>
+                                    <div class="small text-body-secondary">@(string.Join(" · ", new[] { v.VehicleType, v.FuelType }.Where(x => !string.IsNullOrWhiteSpace(x))))</div>
+                                </td>
+                                <td>
+                                    @ExpiryHtml.Line("Disc", v.LicenceDiscExpiry, Model.Today)
+                                    @ExpiryHtml.Line("Roadworthy", v.RoadworthyExpiry, Model.Today)
+                                </td>
+                                <td>
+                                    @if (v.IsActive)
+                                    {
+                                        <span class="badge text-bg-success">Active</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge text-bg-secondary">Off</span>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+</section>
