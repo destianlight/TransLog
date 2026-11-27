@@ -1,4 +1,3 @@
-using System.Globalization;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
 using Microsoft.EntityFrameworkCore;
 using TransLog.Web.Data;
@@ -38,50 +37,43 @@ public static class FleetChecks
     }
 
     /// <summary>
-    /// Checks the make and model of a vehicle form (Part 3c). Returns the catalogue model, or null when none is
-    /// chosen or the make is "Other". A model must belong to the chosen make and be switched on (the vehicle's
-    /// current model is allowed even when switched off later). Problems are added to the model state.
+    /// Part 3d: gives the make, model and variant their known spellings ("mercedes benz" becomes "Mercedes-Benz").
+    /// A make or model that matches nothing but is close to a known one gets a "Did you mean …?" question, returned
+    /// here, unless the user already chose: <c>AcceptSuggestions</c> takes the suggestions, <c>KeepTyped</c> keeps
+    /// the typed text. The page shows the questions and saves nothing while there are any.
     /// </summary>
-    public static async Task<VehicleModel?> CheckModelAsync(AppDbContext db, ModelStateDictionary modelState, VehicleForm form, int? currentModelId)
+    public static async Task<List<NameSuggestion>> CheckNamesAsync(AppDbContext db, VehicleForm form)
     {
-        if (form.MakeChoice == VehicleForm.OtherChoice)
-        {
-            if (string.IsNullOrWhiteSpace(form.OtherMake))
-                modelState.AddModelError("Form.OtherMake", "Type the make, or choose one from the list.");
-            return null;
-        }
-        if (string.IsNullOrEmpty(form.MakeChoice))
-            return null;
+        var questions = new List<NameSuggestion>();
+        if (string.IsNullOrWhiteSpace(form.Make) && string.IsNullOrWhiteSpace(form.Model) && string.IsNullOrWhiteSpace(form.Variant))
+            return questions;
 
-        if (!int.TryParse(form.MakeChoice, NumberStyles.Integer, CultureInfo.InvariantCulture, out var makeId))
+        var all = await VehicleNames.AllAsync(db);
+        var nearMatch = !form.KeepTyped;
+
+        string? Resolve(string field, string? typed, IReadOnlyList<string> known, bool near)
         {
-            modelState.AddModelError("Form.MakeChoice", "Choose a make from the list.");
-            return null;
-        }
-        if (form.VehicleModelId is not int modelId)
-        {
-            modelState.AddModelError("Form.VehicleModelId", "Choose the model, or pick Other under Make.");
-            return null;
+            if (string.IsNullOrWhiteSpace(typed))
+                return null;
+            var (exact, suggestion) = VehicleNames.Find(typed, known, near);
+            if (exact is not null)
+                return exact;
+            if (suggestion is null)
+                return typed.Trim();
+            if (form.AcceptSuggestions)
+                return suggestion;
+            questions.Add(new NameSuggestion(field, typed.Trim(), suggestion));
+            return typed.Trim();
         }
 
-        var model = await db.VehicleModels.AsNoTracking()
-            .FirstOrDefaultAsync(m => m.Id == modelId && m.MakeId == makeId && (m.IsActive || m.Id == currentModelId));
-        if (model is null)
-            modelState.AddModelError("Form.VehicleModelId", "Choose a model of that make.");
-        return model;
-    }
-
-    /// <summary>The makes and models for the vehicle form: switched-on ones, plus the vehicle's current model.</summary>
-    public static async Task<List<VehicleMake>> CatalogueAsync(AppDbContext db, int? currentModelId = null)
-    {
-        var makes = await db.VehicleMakes.AsNoTracking()
-            .Include(m => m.Models.Where(x => x.IsActive || x.Id == currentModelId))
-            .Where(m => m.IsActive || m.Models.Any(x => x.Id == currentModelId))
-            .OrderBy(m => m.Name)
-            .ToListAsync();
-        foreach (var make in makes)
-            make.Models = make.Models.OrderBy(x => x.Name).ToList();
-        return makes;
+        form.Make = Resolve("Make", form.Make, VehicleNames.Makes(all), nearMatch);
+        // The model is looked up under the make as it will be stored (or as suggested, while the question is open).
+        var makeForLookup = questions.FirstOrDefault(q => q.Field == "Make")?.Suggestion ?? form.Make;
+        form.Model = Resolve("Model", form.Model, VehicleNames.Models(all, makeForLookup), nearMatch);
+        var modelForLookup = questions.FirstOrDefault(q => q.Field == "Model")?.Suggestion ?? form.Model;
+        // Variants are codes: only an exact match (apart from capitals and spaces) changes the spelling.
+        form.Variant = Resolve("Variant", form.Variant, VehicleNames.Variants(all, makeForLookup, modelForLookup), near: false);
+        return questions;
     }
 
     /// <summary>

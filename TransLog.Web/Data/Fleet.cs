@@ -19,17 +19,20 @@ public class Vehicle
     [MaxLength(30)]
     public string? FleetNo { get; set; }
 
-    /// <summary>The make and model from the TransLog catalogue (Part 3c), used for stats across vehicles.</summary>
-    public int? VehicleModelId { get; set; }
-
-    public VehicleModel? VehicleModel { get; set; }
-
-    /// <summary>Typed by the company when its model is not in the catalogue ("Other"). A system admin can add it to the catalogue later.</summary>
+    /// <summary>
+    /// Make, model and variant are typed freely, with suggestions from every company's vehicles (Part 3d).
+    /// On save a value that matches a known one apart from capitals, spaces and dashes takes the known spelling.
+    /// </summary>
     [MaxLength(50)]
-    public string? OtherMake { get; set; }
+    public string? Make { get; set; }
 
+    /// <summary>The model family, for example "Actros".</summary>
     [MaxLength(50)]
-    public string? OtherModel { get; set; }
+    public string? Model { get; set; }
+
+    /// <summary>The exact version, for example "2645 LS".</summary>
+    [MaxLength(50)]
+    public string? Variant { get; set; }
 
     public int? Year { get; set; }
 
@@ -58,68 +61,9 @@ public class Vehicle
 
     public List<VehicleAlias> Aliases { get; set; } = [];
 
-    /// <summary>"Volvo FH", "Volvo FH (other)" for a typed model, or "" when not set. Needs VehicleModel.Make loaded.</summary>
+    /// <summary>"Mercedes-Benz Actros 2645 LS", or "" when not set.</summary>
     public string MakeAndModel =>
-        VehicleModel is { } m ? $"{m.Make?.Name} {m.Name}".Trim()
-        : OtherMake is not null || OtherModel is not null ? $"{OtherMake} {OtherModel} (other)".Trim()
-        : "";
-}
-
-/// <summary>A vehicle make in the TransLog catalogue (Part 3c). Global: shared by all companies, managed by system admins.</summary>
-public class VehicleMake
-{
-    public int Id { get; set; }
-
-    [MaxLength(50)]
-    public string Name { get; set; } = "";
-
-    public bool IsActive { get; set; } = true;
-
-    public List<VehicleModel> Models { get; set; } = [];
-}
-
-/// <summary>A model of a make in the TransLog catalogue. Type, fuel and tank fill in empty vehicle fields when picked.</summary>
-public class VehicleModel
-{
-    public int Id { get; set; }
-
-    public int MakeId { get; set; }
-
-    public VehicleMake? Make { get; set; }
-
-    [MaxLength(50)]
-    public string Name { get; set; } = "";
-
-    /// <summary>One of VehicleOptions.Types.</summary>
-    [MaxLength(30)]
-    public string? VehicleType { get; set; }
-
-    /// <summary>One of VehicleOptions.FuelTypes.</summary>
-    [MaxLength(20)]
-    public string? FuelType { get; set; }
-
-    /// <summary>Typical tank size in litres, when known.</summary>
-    public decimal? TankCapacity { get; set; }
-
-    public bool IsActive { get; set; } = true;
-}
-
-/// <summary>
-/// Another way a slip prints this vehicle's registration (a misspelling, an old plate, a fleet name).
-/// Stored in the same normal form as a registration; unique within the company.
-/// </summary>
-public class VehicleAlias
-{
-    public int Id { get; set; }
-
-    public int CompanyId { get; set; }
-
-    public int VehicleId { get; set; }
-
-    public Vehicle? Vehicle { get; set; }
-
-    [MaxLength(20)]
-    public string Alias { get; set; } = "";
+        string.Join(" ", new[] { Make, Model, Variant }.Where(x => !string.IsNullOrWhiteSpace(x)));
 }
 
 /// <summary>A driver of a company. Never deleted, only deactivated.</summary>

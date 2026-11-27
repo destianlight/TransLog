@@ -22,7 +22,11 @@ public class EditModel(AppDbContext db, AuditLogger audit, LinkService links) : 
 
     public List<VehicleAlias> Aliases { get; private set; } = [];
 
-    public List<VehicleMake> Catalogue { get; private set; } = [];
+    /// <summary>Known makes, models and variants for the suggestion lists.</summary>
+    public List<VehicleName> Names { get; private set; } = [];
+
+    /// <summary>"Did you mean …?" questions after a save attempt.</summary>
+    public List<NameSuggestion> Questions { get; private set; } = [];
 
     /// <summary>The driver who has this vehicle now, or null.</summary>
     public string? DriverName { get; private set; }
@@ -44,8 +48,8 @@ public class EditModel(AppDbContext db, AuditLogger audit, LinkService links) : 
         var plate = Plates.Normalize(Form.RegistrationNo);
         if (ModelState.IsValid && await FleetChecks.PlateProblemAsync(db, plate, vehicle.Id) is { } problem)
             ModelState.AddModelError("Form.RegistrationNo", problem);
-        var model = await FleetChecks.CheckModelAsync(db, ModelState, Form, vehicle.VehicleModelId);
-        if (!ModelState.IsValid)
+        Questions = await FleetChecks.CheckNamesAsync(db, Form);
+        if (!ModelState.IsValid || Questions.Count > 0)
             return Page();
 
         var switchedOff = vehicle.IsActive && !Form.IsActive;
@@ -56,7 +60,7 @@ public class EditModel(AppDbContext db, AuditLogger audit, LinkService links) : 
             changes.Add(Form.IsActive ? "switched on" : "switched off");
 
         vehicle.RegistrationNo = plate;
-        Form.CopyTo(vehicle, model);
+        Form.CopyTo(vehicle);
 
         audit.Add("VehicleUpdated", $"{plate}: {(changes.Count == 0 ? "details" : string.Join(", ", changes))}", vehicle.CompanyId);
         await db.SaveChangesAsync();
@@ -107,11 +111,11 @@ public class EditModel(AppDbContext db, AuditLogger audit, LinkService links) : 
     /// <summary>The vehicle with its names, only when it belongs to this company (the tenant filter decides).</summary>
     private async Task<Vehicle?> LoadAsync(int id)
     {
-        var vehicle = await db.Vehicles.Include(v => v.Aliases).Include(v => v.VehicleModel).FirstOrDefaultAsync(v => v.Id == id);
+        var vehicle = await db.Vehicles.Include(v => v.Aliases).FirstOrDefaultAsync(v => v.Id == id);
         if (vehicle is null)
             return null;
 
-        Catalogue = await FleetChecks.CatalogueAsync(db, vehicle.VehicleModelId);
+        Names = await VehicleNames.AllAsync(db);
         Id = vehicle.Id;
         Registration = vehicle.RegistrationNo;
         Aliases = vehicle.Aliases.OrderBy(a => a.Alias).ToList();

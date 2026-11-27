@@ -53,9 +53,8 @@ public class Part3aTests(TestApp app) : IClassFixture<TestApp>
 
         var add = await AddVehicleAsync(owner, "llt 587-nw", new()
         {
-            ["Form.MakeChoice"] = "other",
-            ["Form.OtherMake"] = "Volvo",
-            ["Form.OtherModel"] = "FH",
+            ["Form.Make"] = "Volvo",
+            ["Form.Model"] = "FH",
             ["Form.VehicleType"] = "Truck tractor",
             ["Form.LicenceDiscExpiry"] = Day(-1),
             ["Form.RoadworthyExpiry"] = Day(10),

@@ -1,6 +1,5 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
-using TransLog.Web.Fleet;
 using TransLog.Web.Security;
 
 namespace TransLog.Web.Data;
@@ -26,9 +25,6 @@ public static class DbInitializer
             if (!await roleManager.RoleExistsAsync(role))
                 await roleManager.CreateAsync(new AppRole(role));
         }
-
-        // Part 3c: the make and model catalogue starts with common South African vehicles.
-        await VehicleCatalogSeed.RunAsync(db);
 
         var userManager = sp.GetRequiredService<UserManager<AppUser>>();
 

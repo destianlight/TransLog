@@ -12,25 +12,29 @@ public class CreateModel(AppDbContext db, AuditLogger audit) : PageModel
     [BindProperty]
     public VehicleForm Form { get; set; } = new();
 
-    public List<VehicleMake> Catalogue { get; private set; } = [];
+    /// <summary>Known makes, models and variants for the suggestion lists.</summary>
+    public List<VehicleName> Names { get; private set; } = [];
 
-    public async Task OnGetAsync() => Catalogue = await FleetChecks.CatalogueAsync(db);
+    /// <summary>"Did you mean …?" questions after a save attempt.</summary>
+    public List<NameSuggestion> Questions { get; private set; } = [];
+
+    public async Task OnGetAsync() => Names = await VehicleNames.AllAsync(db);
 
     public async Task<IActionResult> OnPostAsync()
     {
         if (User.GetCompanyId() is not int companyId)
             return NotFound();
 
-        Catalogue = await FleetChecks.CatalogueAsync(db);
+        Names = await VehicleNames.AllAsync(db);
         var plate = Plates.Normalize(Form.RegistrationNo);
         if (ModelState.IsValid && await FleetChecks.PlateProblemAsync(db, plate, exceptVehicleId: 0) is { } problem)
             ModelState.AddModelError("Form.RegistrationNo", problem);
-        var model = await FleetChecks.CheckModelAsync(db, ModelState, Form, currentModelId: null);
-        if (!ModelState.IsValid)
+        Questions = await FleetChecks.CheckNamesAsync(db, Form);
+        if (!ModelState.IsValid || Questions.Count > 0)
             return Page();
 
         var vehicle = new Vehicle { CompanyId = companyId, RegistrationNo = plate, CreatedAt = DateTime.UtcNow };
-        Form.CopyTo(vehicle, model);
+        Form.CopyTo(vehicle);
         vehicle.IsActive = true;
         db.Vehicles.Add(vehicle);
         audit.Add("VehicleCreated", plate, companyId);

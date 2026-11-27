@@ -27,10 +27,6 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, CurrentCompany
 
     public DbSet<DriverVehicleLink> DriverVehicleLinks => Set<DriverVehicleLink>();
 
-    public DbSet<VehicleMake> VehicleMakes => Set<VehicleMake>();
-
-    public DbSet<VehicleModel> VehicleModels => Set<VehicleModel>();
-
     protected override void OnModelCreating(ModelBuilder b)
     {
         base.OnModelCreating(b);
@@ -60,20 +56,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, CurrentCompany
             e.HasAlternateKey(v => new { v.CompanyId, v.Id });
             e.HasIndex(v => new { v.CompanyId, v.RegistrationNo }).IsUnique();
             e.Property(v => v.TankCapacity).HasPrecision(8, 1);
-            e.HasOne(v => v.VehicleModel).WithMany().HasForeignKey(v => v.VehicleModelId).OnDelete(DeleteBehavior.Restrict);
             e.Ignore(v => v.MakeAndModel);
-        });
-
-        // Part 3c: the global make and model catalogue (no tenant filter: every company picks from it).
-        b.Entity<VehicleMake>(e =>
-        {
-            e.HasIndex(m => m.Name).IsUnique();
-        });
-        b.Entity<VehicleModel>(e =>
-        {
-            e.HasOne(m => m.Make).WithMany(m => m.Models).HasForeignKey(m => m.MakeId).OnDelete(DeleteBehavior.Restrict);
-            e.HasIndex(m => new { m.MakeId, m.Name }).IsUnique();
-            e.Property(m => m.TankCapacity).HasPrecision(8, 1);
         });
 
         b.Entity<VehicleAlias>(e =>

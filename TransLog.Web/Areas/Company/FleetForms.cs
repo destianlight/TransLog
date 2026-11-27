@@ -14,17 +14,20 @@ public class VehicleForm
     [StringLength(30)]
     public string? FleetNo { get; set; }
 
-    /// <summary>The make picked from the catalogue: its id, "other" (typed below), or empty.</summary>
-    public string? MakeChoice { get; set; }
-
-    /// <summary>The model picked from the catalogue (must belong to the chosen make).</summary>
-    public int? VehicleModelId { get; set; }
+    [StringLength(50)]
+    public string? Make { get; set; }
 
     [StringLength(50)]
-    public string? OtherMake { get; set; }
+    public string? Model { get; set; }
 
     [StringLength(50)]
-    public string? OtherModel { get; set; }
+    public string? Variant { get; set; }
+
+    /// <summary>Pressed "Use that" on a "Did you mean …?" question: take the suggested spellings.</summary>
+    public bool AcceptSuggestions { get; set; }
+
+    /// <summary>Pressed "Keep what I typed": save the make and model as typed, no more questions.</summary>
+    public bool KeepTyped { get; set; }
 
     [Range(1950, 2100, ErrorMessage = "Enter a year such as 2019.")]
     public int? Year { get; set; }
@@ -49,12 +52,9 @@ public class VehicleForm
     {
         RegistrationNo = v.RegistrationNo,
         FleetNo = v.FleetNo,
-        MakeChoice = v.VehicleModel is { } m ? m.MakeId.ToString(System.Globalization.CultureInfo.InvariantCulture)
-            : v.OtherMake is not null || v.OtherModel is not null ? OtherChoice
-            : null,
-        VehicleModelId = v.VehicleModelId,
-        OtherMake = v.OtherMake,
-        OtherModel = v.OtherModel,
+        Make = v.Make,
+        Model = v.Model,
+        Variant = v.Variant,
         Year = v.Year,
         VehicleType = v.VehicleType,
         FuelType = v.FuelType,
@@ -65,24 +65,20 @@ public class VehicleForm
         IsActive = v.IsActive,
     };
 
-    public const string OtherChoice = "other";
-
     /// <summary>
-    /// Copies everything except the registration, which the page normalises and checks first.
-    /// <paramref name="model"/> is the catalogue model checked by FleetChecks.CheckModelAsync (null for none or "Other");
-    /// its type, fuel and tank size fill in fields left empty.
+    /// Copies everything except the registration, which the page normalises and checks first. Make, model and
+    /// variant have already been given their known spellings by FleetChecks.CheckNamesAsync.
     /// </summary>
-    public void CopyTo(Vehicle v, VehicleModel? model)
+    public void CopyTo(Vehicle v)
     {
         v.FleetNo = Clean(FleetNo);
-        v.VehicleModelId = model?.Id;
-        var other = MakeChoice == OtherChoice;
-        v.OtherMake = other ? Clean(OtherMake) : null;
-        v.OtherModel = other ? Clean(OtherModel) : null;
+        v.Make = Clean(Make);
+        v.Model = Clean(Model);
+        v.Variant = Clean(Variant);
         v.Year = Year;
-        v.VehicleType = VehicleOptions.Types.Contains(VehicleType) ? VehicleType : model?.VehicleType;
-        v.FuelType = VehicleOptions.FuelTypes.Contains(FuelType) ? FuelType : model?.FuelType;
-        v.TankCapacity = TankCapacity ?? model?.TankCapacity;
+        v.VehicleType = VehicleOptions.Types.Contains(VehicleType) ? VehicleType : null;
+        v.FuelType = VehicleOptions.FuelTypes.Contains(FuelType) ? FuelType : null;
+        v.TankCapacity = TankCapacity;
         v.CurrentOdometer = CurrentOdometer;
         v.LicenceDiscExpiry = LicenceDiscExpiry;
         v.RoadworthyExpiry = RoadworthyExpiry;

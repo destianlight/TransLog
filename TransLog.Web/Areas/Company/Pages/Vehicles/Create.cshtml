@@ -1,7 +1,8 @@
 @page
 @model TransLog.Web.Areas.CompanyArea.Pages.Vehicles.CreateModel
 @{
-    ViewData["Catalogue"] = Model.Catalogue; // read by _VehicleFields
+    ViewData["VehicleNames"] = Model.Names;       // read by _VehicleFields
+    ViewData["NameQuestions"] = Model.Questions;  // read by _VehicleFields
     ViewData["Title"] = "Add vehicle";
 }
 

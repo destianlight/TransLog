@@ -1,38 +1,60 @@
-// Vehicle form (Part 3c): the Model list shows only the models of the chosen make;
-// "Other" under Make shows two boxes to type the make and model instead.
+// Vehicle form (Part 3d): make, model and variant are free text. The suggestion lists come from every
+// make, model and variant known to TransLog; Model shows only the chosen make's models, Variant only that
+// model's variants. Capitals, spaces and dashes do not matter ("mercedes benz" finds "Mercedes-Benz").
 (function () {
+    var data = document.getElementById('tl-vehicle-names');
     var make = document.querySelector('[data-tl-make]');
     var model = document.querySelector('[data-tl-model]');
-    var modelBox = document.querySelector('[data-tl-model-box]');
-    var others = document.querySelectorAll('[data-tl-other]');
-    if (!make || !model) return;
+    var variant = document.querySelector('[data-tl-variant]');
+    if (!data || !make || !model || !variant) return;
+
+    var names = [];
+    try { names = JSON.parse(data.textContent || '[]'); } catch (e) { return; }
+
+    function key(text) {
+        return (text || '').toUpperCase().replace(/[^0-9A-Z]/g, '');
+    }
+
+    // One spelling per key: the most used one.
+    function pick(values) {
+        var best = {};
+        values.forEach(function (v) {
+            var k = key(v.text);
+            if (!k) return;
+            var b = best[k];
+            if (!b) { best[k] = { text: v.text, uses: v.uses }; return; }
+            if (b.text === v.text) b.uses += v.uses;
+            else if (v.uses > b.uses) best[k] = { text: v.text, uses: v.uses };
+        });
+        return Object.keys(best).map(function (k) { return best[k].text; })
+            .sort(function (a, b) { return a.localeCompare(b); });
+    }
+
+    function fill(listId, values) {
+        var list = document.getElementById(listId);
+        list.textContent = '';
+        values.forEach(function (text) {
+            var option = document.createElement('option');
+            option.value = text;
+            list.appendChild(option);
+        });
+    }
 
     function update() {
-        var value = make.value;
-        var isOther = value === 'other';
-        var hasMake = value !== '' && !isOther;
-
-        for (var i = 0; i < model.options.length; i++) {
-            var option = model.options[i];
-            var forMake = option.getAttribute('data-make');
-            if (forMake === null) continue; // "Choose the model"
-            var show = forMake === value;
-            option.hidden = !show;
-            option.disabled = !show;
-            // The make is already chosen, so the model list shows just the model name.
-            if (!option.getAttribute('data-full')) option.setAttribute('data-full', option.text);
-            var makeName = make.options[make.selectedIndex] ? make.options[make.selectedIndex].text : '';
-            option.text = show && option.getAttribute('data-full').indexOf(makeName + ' ') === 0
-                ? option.getAttribute('data-full').substring(makeName.length + 1)
-                : option.getAttribute('data-full');
-        }
-        var selected = model.options[model.selectedIndex];
-        if (selected && selected.disabled) model.value = '';
-
-        if (modelBox) modelBox.hidden = !hasMake;
-        for (var j = 0; j < others.length; j++) others[j].hidden = !isOther;
+        var makeKey = key(make.value);
+        var modelKey = key(model.value);
+        fill('tl-makes', pick(names.map(function (n) { return { text: n.a, uses: n.u }; })));
+        fill('tl-models', pick(names
+            .filter(function (n) { return n.b && key(n.a) === makeKey; })
+            .map(function (n) { return { text: n.b, uses: n.u }; })));
+        fill('tl-variants', pick(names
+            .filter(function (n) { return n.c && key(n.a) === makeKey && key(n.b) === modelKey; })
+            .map(function (n) { return { text: n.c, uses: n.u }; })));
     }
 
     make.addEventListener('change', update);
+    make.addEventListener('input', update);
+    model.addEventListener('change', update);
+    model.addEventListener('input', update);
     update();
 })();

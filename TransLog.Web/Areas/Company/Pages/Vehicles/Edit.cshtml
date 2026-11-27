@@ -1,7 +1,8 @@
 @page "{id:int}"
 @model TransLog.Web.Areas.CompanyArea.Pages.Vehicles.EditModel
 @{
-    ViewData["Catalogue"] = Model.Catalogue; // read by _VehicleFields
+    ViewData["VehicleNames"] = Model.Names;       // read by _VehicleFields
+    ViewData["NameQuestions"] = Model.Questions;  // read by _VehicleFields
     ViewData["Title"] = Model.Registration;
 }
 
