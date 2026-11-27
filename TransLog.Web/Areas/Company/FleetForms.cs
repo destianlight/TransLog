@@ -14,11 +14,17 @@ public class VehicleForm
     [StringLength(30)]
     public string? FleetNo { get; set; }
 
-    [StringLength(50)]
-    public string? Make { get; set; }
+    /// <summary>The make picked from the catalogue: its id, "other" (typed below), or empty.</summary>
+    public string? MakeChoice { get; set; }
+
+    /// <summary>The model picked from the catalogue (must belong to the chosen make).</summary>
+    public int? VehicleModelId { get; set; }
 
     [StringLength(50)]
-    public string? Model { get; set; }
+    public string? OtherMake { get; set; }
+
+    [StringLength(50)]
+    public string? OtherModel { get; set; }
 
     [Range(1950, 2100, ErrorMessage = "Enter a year such as 2019.")]
     public int? Year { get; set; }
@@ -43,8 +49,12 @@ public class VehicleForm
     {
         RegistrationNo = v.RegistrationNo,
         FleetNo = v.FleetNo,
-        Make = v.Make,
-        Model = v.Model,
+        MakeChoice = v.VehicleModel is { } m ? m.MakeId.ToString(System.Globalization.CultureInfo.InvariantCulture)
+            : v.OtherMake is not null || v.OtherModel is not null ? OtherChoice
+            : null,
+        VehicleModelId = v.VehicleModelId,
+        OtherMake = v.OtherMake,
+        OtherModel = v.OtherModel,
         Year = v.Year,
         VehicleType = v.VehicleType,
         FuelType = v.FuelType,
@@ -55,16 +65,24 @@ public class VehicleForm
         IsActive = v.IsActive,
     };
 
-    /// <summary>Copies everything except the registration, which the page normalises and checks first.</summary>
-    public void CopyTo(Vehicle v)
+    public const string OtherChoice = "other";
+
+    /// <summary>
+    /// Copies everything except the registration, which the page normalises and checks first.
+    /// <paramref name="model"/> is the catalogue model checked by FleetChecks.CheckModelAsync (null for none or "Other");
+    /// its type, fuel and tank size fill in fields left empty.
+    /// </summary>
+    public void CopyTo(Vehicle v, VehicleModel? model)
     {
         v.FleetNo = Clean(FleetNo);
-        v.Make = Clean(Make);
-        v.Model = Clean(Model);
+        v.VehicleModelId = model?.Id;
+        var other = MakeChoice == OtherChoice;
+        v.OtherMake = other ? Clean(OtherMake) : null;
+        v.OtherModel = other ? Clean(OtherModel) : null;
         v.Year = Year;
-        v.VehicleType = VehicleOptions.Types.Contains(VehicleType) ? VehicleType : null;
-        v.FuelType = VehicleOptions.FuelTypes.Contains(FuelType) ? FuelType : null;
-        v.TankCapacity = TankCapacity;
+        v.VehicleType = VehicleOptions.Types.Contains(VehicleType) ? VehicleType : model?.VehicleType;
+        v.FuelType = VehicleOptions.FuelTypes.Contains(FuelType) ? FuelType : model?.FuelType;
+        v.TankCapacity = TankCapacity ?? model?.TankCapacity;
         v.CurrentOdometer = CurrentOdometer;
         v.LicenceDiscExpiry = LicenceDiscExpiry;
         v.RoadworthyExpiry = RoadworthyExpiry;

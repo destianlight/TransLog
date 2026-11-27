@@ -19,11 +19,17 @@ public class Vehicle
     [MaxLength(30)]
     public string? FleetNo { get; set; }
 
+    /// <summary>The make and model from the TransLog catalogue (Part 3c), used for stats across vehicles.</summary>
+    public int? VehicleModelId { get; set; }
+
+    public VehicleModel? VehicleModel { get; set; }
+
+    /// <summary>Typed by the company when its model is not in the catalogue ("Other"). A system admin can add it to the catalogue later.</summary>
     [MaxLength(50)]
-    public string? Make { get; set; }
+    public string? OtherMake { get; set; }
 
     [MaxLength(50)]
-    public string? Model { get; set; }
+    public string? OtherModel { get; set; }
 
     public int? Year { get; set; }
 
@@ -51,6 +57,51 @@ public class Vehicle
     public DateTime CreatedAt { get; set; }
 
     public List<VehicleAlias> Aliases { get; set; } = [];
+
+    /// <summary>"Volvo FH", "Volvo FH (other)" for a typed model, or "" when not set. Needs VehicleModel.Make loaded.</summary>
+    public string MakeAndModel =>
+        VehicleModel is { } m ? $"{m.Make?.Name} {m.Name}".Trim()
+        : OtherMake is not null || OtherModel is not null ? $"{OtherMake} {OtherModel} (other)".Trim()
+        : "";
+}
+
+/// <summary>A vehicle make in the TransLog catalogue (Part 3c). Global: shared by all companies, managed by system admins.</summary>
+public class VehicleMake
+{
+    public int Id { get; set; }
+
+    [MaxLength(50)]
+    public string Name { get; set; } = "";
+
+    public bool IsActive { get; set; } = true;
+
+    public List<VehicleModel> Models { get; set; } = [];
+}
+
+/// <summary>A model of a make in the TransLog catalogue. Type, fuel and tank fill in empty vehicle fields when picked.</summary>
+public class VehicleModel
+{
+    public int Id { get; set; }
+
+    public int MakeId { get; set; }
+
+    public VehicleMake? Make { get; set; }
+
+    [MaxLength(50)]
+    public string Name { get; set; } = "";
+
+    /// <summary>One of VehicleOptions.Types.</summary>
+    [MaxLength(30)]
+    public string? VehicleType { get; set; }
+
+    /// <summary>One of VehicleOptions.FuelTypes.</summary>
+    [MaxLength(20)]
+    public string? FuelType { get; set; }
+
+    /// <summary>Typical tank size in litres, when known.</summary>
+    public decimal? TankCapacity { get; set; }
+
+    public bool IsActive { get; set; } = true;
 }
 
 /// <summary>
@@ -110,7 +161,7 @@ public class Driver
     /// <summary>Professional driving permit.</summary>
     public DateOnly? PrdpExpiry { get; set; }
 
-    /// <summary>The driver's login (a Capturer user of the same company), when they have one.</summary>
+    /// <summary>The driver's login (a Driver user of the same company), when they have one.</summary>
     public int? UserId { get; set; }
 
     public bool IsActive { get; set; } = true;

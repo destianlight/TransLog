@@ -24,6 +24,7 @@ public class Part1Tests(TestApp app) : IClassFixture<TestApp>
             ["Owner.FullName"] = "Owner of " + name,
             ["Owner.Email"] = ownerEmail,
             ["Owner.Password"] = password,
+            ["Owner.Cell"] = Cells.Next(),
         });
         Assert.Equal(HttpStatusCode.Redirect, r.StatusCode);
         var m = Regex.Match(Path(r), @"/sysadmin/companies/edit/(\d+)");
@@ -122,6 +123,7 @@ public class Part1Tests(TestApp app) : IClassFixture<TestApp>
         {
             ["Form.FullName"] = "Owner of Bosveld Trucking",
             ["Form.Email"] = "owner3@bosveld.test",
+            ["Form.Cell"] = Cells.Next(),
             ["Form.Role"] = "Owner",
             ["Form.IsActive"] = "true",
             ["Form.NewPassword"] = "second2",

@@ -76,7 +76,7 @@ public class EditModel(AppDbContext db, UserManager<AppUser> users, AuditLogger 
         foreach (var u in await db.Users.Where(u => u.CompanyId == company.Id).OrderBy(u => u.FullName).ToListAsync())
         {
             var role = (await users.GetRolesAsync(u)).FirstOrDefault() ?? "";
-            Users.Add(new UserRow(u.Id, u.FullName, u.Email ?? "", role, u.IsActive, u.LockoutEnd > now));
+            Users.Add(new UserRow(u.Id, u.FullName, u.Email ?? "", role, u.IsActive, u.LockoutEnd > now, u.PhoneNumber ?? ""));
         }
     }
 }

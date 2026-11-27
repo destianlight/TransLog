@@ -36,6 +36,7 @@ public class Part2Tests(TestApp app) : IClassFixture<TestApp>
             ["Owner.FullName"] = "Owner of " + name,
             ["Owner.Email"] = ownerEmail,
             ["Owner.Password"] = "owner1",
+            ["Owner.Cell"] = Cells.Next(),
         });
         Assert.Equal(HttpStatusCode.Redirect, r.StatusCode);
         return await LoginAsync(ownerEmail, "owner1");
@@ -46,6 +47,7 @@ public class Part2Tests(TestApp app) : IClassFixture<TestApp>
         {
             ["Form.FullName"] = fullName,
             ["Form.Email"] = email,
+            ["Form.Cell"] = Cells.Next(),
             ["Form.Password"] = password,
             ["Form.Role"] = role,
         });
@@ -147,6 +149,7 @@ public class Part2Tests(TestApp app) : IClassFixture<TestApp>
         {
             ["Form.FullName"] = "Thabo Driver",
             ["Form.Email"] = "thabo@highveld.test",
+            ["Form.Cell"] = Cells.Next(),
             ["Form.Role"] = "Capturer",
             ["Form.IsActive"] = "true",
             ["Form.NewPassword"] = "thabo2",
@@ -160,6 +163,7 @@ public class Part2Tests(TestApp app) : IClassFixture<TestApp>
         {
             ["Form.FullName"] = "Thabo Driver",
             ["Form.Email"] = "thabo@highveld.test",
+            ["Form.Cell"] = Cells.Next(),
             ["Form.Role"] = "Capturer",
             ["Form.IsActive"] = "false",
         });
@@ -219,6 +223,7 @@ public class Part2Tests(TestApp app) : IClassFixture<TestApp>
             ["Owner.FullName"] = "First Owner",
             ["Owner.Email"] = "first@limpopo.test",
             ["Owner.Password"] = "owner1",
+            ["Owner.Cell"] = Cells.Next(),
         })).StatusCode);
 
         // Same name in other letters: refused.
@@ -228,6 +233,7 @@ public class Part2Tests(TestApp app) : IClassFixture<TestApp>
             ["Owner.FullName"] = "Second Owner",
             ["Owner.Email"] = "second@limpopo.test",
             ["Owner.Password"] = "owner1",
+            ["Owner.Cell"] = Cells.Next(),
         });
         Assert.Equal(HttpStatusCode.OK, twin.StatusCode);
         Assert.Contains("already exists", await twin.Content.ReadAsStringAsync());
@@ -239,6 +245,7 @@ public class Part2Tests(TestApp app) : IClassFixture<TestApp>
             ["Owner.FullName"] = "Third Owner",
             ["Owner.Email"] = "third@mpumalanga.test",
             ["Owner.Password"] = "owner1",
+            ["Owner.Cell"] = Cells.Next(),
         });
         var editUrl = Regex.Match(Path(other), @"/sysadmin/companies/edit/\d+").Value;
         var rename = await admin.PostFormAsync(editUrl, new() { ["Form.Name"] = "Limpopo Lines", ["IsActive"] = "true" });

@@ -22,6 +22,12 @@
                 <span asp-validation-for="Form.Email" class="text-danger small"></span>
             </div>
             <div class="mb-3">
+                <label asp-for="Form.Cell" class="form-label">Cell number (also works as the login)</label>
+                <input asp-for="Form.Cell" class="form-control" type="tel" inputmode="tel" autocomplete="off" />
+                <div class="form-text">For example 082 123 4567. One cell number can belong to one TransLog user only.</div>
+                <span asp-validation-for="Form.Cell" class="text-danger small"></span>
+            </div>
+            <div class="mb-3">
                 <label asp-for="Form.Password" class="form-label">Password (at least 6 characters)</label>
                 <input asp-for="Form.Password" class="form-control" type="text" autocomplete="off" />
                 <span asp-validation-for="Form.Password" class="text-danger small"></span>

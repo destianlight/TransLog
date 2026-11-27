@@ -145,10 +145,10 @@ public class Part3bTests(TestApp app) : IClassFixture<TestApp>
         Assert.NotNull(await InDbAsync(db => db.Drivers.IgnoreQueryFilters().Where(d => d.Id == driver).Select(d => d.UserId).SingleAsync()));
 
         var phone = await _s.LoginAsync("dina@link-five.test", "driver1");
-        var mine = await (await phone.GetAsync("/company/myvehicle")).Content.ReadAsStringAsync();
+        var mine = await (await phone.GetAsync("/driver/myvehicle")).Content.ReadAsStringAsync();
         Assert.Contains("You have no vehicle yet", mine);
 
-        var pick = await Scenario.PostToAsync(phone, "/company/myvehicle", "/company/myvehicle?handler=Link", new() { ["vehicleId"] = vehicle.ToString() });
+        var pick = await Scenario.PostToAsync(phone, "/driver/myvehicle", "/driver/myvehicle?handler=Link", new() { ["vehicleId"] = vehicle.ToString() });
         Assert.Equal(HttpStatusCode.Redirect, pick.StatusCode);
         var open = Assert.Single(await OpenLinksAsync(driver));
         Assert.Equal(LinkSource.Driver, open.LinkedBy);
@@ -157,10 +157,10 @@ public class Part3bTests(TestApp app) : IClassFixture<TestApp>
         var settings = await owner.PostFormAsync("/company/settings", new() { ["Form.DriverLinking"] = "CompanyOnly" });
         Assert.Equal(HttpStatusCode.Redirect, settings.StatusCode);
 
-        var blocked = await Scenario.PostToAsync(phone, "/company/myvehicle", "/company/myvehicle?handler=Unlink", new());
+        var blocked = await Scenario.PostToAsync(phone, "/driver/myvehicle", "/driver/myvehicle?handler=Unlink", new());
         Assert.Equal(HttpStatusCode.Redirect, blocked.StatusCode);
         Assert.Single(await OpenLinksAsync(driver)); // still linked
-        var text = await (await phone.GetAsync("/company/myvehicle")).Content.ReadAsStringAsync();
+        var text = await (await phone.GetAsync("/driver/myvehicle")).Content.ReadAsStringAsync();
         Assert.Contains("Your company links drivers to vehicles", text);
     }
 
@@ -191,17 +191,17 @@ public class Part3bTests(TestApp app) : IClassFixture<TestApp>
     }
 
     [Fact]
-    public async Task A_login_with_no_driver_record_gets_an_explanation()
+    public async Task Office_users_cannot_open_the_driver_pages()
     {
         var owner = await _s.CompanyWithOwnerAsync("Link Test Seven", "owner@link-seven.test");
         var capturer = await _s.AddUserAndLoginAsync(owner, "Lone Capturer", "lone@link-seven.test", "Capturer");
 
-        var html = await (await capturer.GetAsync("/company/myvehicle")).Content.ReadAsStringAsync();
-        Assert.Contains("not linked to a driver", html);
+        Assert.Equal(HttpStatusCode.NotFound, (await capturer.GetAsync("/driver/myvehicle")).StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound, (await owner.GetAsync("/driver")).StatusCode);
     }
 
     [Fact]
-    public async Task A_login_cannot_be_given_without_an_email()
+    public async Task A_driver_without_an_email_logs_in_with_the_cell_number()
     {
         var owner = await _s.CompanyWithOwnerAsync("Link Test Eight", "owner@link-eight.test");
         var driver = await AddDriverAsync(owner, "Fred", "Linkeight", "0821110008");
@@ -209,9 +209,10 @@ public class Part3bTests(TestApp app) : IClassFixture<TestApp>
         var give = await Scenario.PostToAsync(owner, $"/company/drivers/edit/{driver}",
             $"/company/drivers/edit/{driver}?handler=GiveLogin", new() { ["password"] = "driver1" });
         Assert.Equal(HttpStatusCode.Redirect, give.StatusCode);
+        Assert.NotNull(await InDbAsync(db => db.Drivers.IgnoreQueryFilters().Where(d => d.Id == driver).Select(d => d.UserId).SingleAsync()));
 
-        var page = await (await owner.GetAsync($"/company/drivers/edit/{driver}")).Content.ReadAsStringAsync();
-        Assert.Contains("Add the driver", page);
-        Assert.Null(await InDbAsync(db => db.Drivers.IgnoreQueryFilters().Where(d => d.Id == driver).Select(d => d.UserId).SingleAsync()));
+        // Typed with +27 and spaces: the same number.
+        var phone = await _s.LoginAsync("+27 82 111 0008", "driver1");
+        Assert.Equal("/driver", (await phone.GetAsync("/go")).Headers.Location?.OriginalString);
     }
 }

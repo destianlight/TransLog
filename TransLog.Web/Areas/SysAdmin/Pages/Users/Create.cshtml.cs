@@ -38,14 +38,12 @@ public class CreateModel(AppDbContext db, UserManager<AppUser> users, AuditLogge
         var email = Form.Email.Trim();
         var user = new AppUser
         {
-            UserName = email,
-            Email = email,
-            EmailConfirmed = true,
             FullName = Form.FullName.Trim(),
             CompanyId = CompanyId,
             IsActive = true,
             CreatedAt = DateTime.UtcNow,
         };
+        Logins.Apply(user, email, Form.Cell);
 
         var result = await users.CreateAsync(user, Form.Password);
         if (result.Succeeded)
@@ -60,8 +58,8 @@ public class CreateModel(AppDbContext db, UserManager<AppUser> users, AuditLogge
         audit.Add("UserCreated", $"{email} as {role}", CompanyId);
         await db.SaveChangesAsync();
 
-        TempData["Message"] = $"{user.FullName} added. They can log in with {email}.";
-        LoginDetails.Keep(this, user.FullName, CompanyName, email, Form.Password);
+        TempData["Message"] = $"{user.FullName} added. They can log in with {Logins.Describe(user)}.";
+        LoginDetails.Keep(this, user.FullName, CompanyName, Logins.Describe(user), Form.Password);
         return CompanyId is int companyId
             ? RedirectToPage("/Companies/Edit", new { id = companyId })
             : RedirectToPage("/Admins");

@@ -16,7 +16,8 @@
         <div class="tl-card mb-4">
             <dl class="row mb-0">
                 <dt class="col-4">Name</dt><dd class="col-8">@Model.Me.FullName</dd>
-                <dt class="col-4">Email</dt><dd class="col-8">@Model.Me.Email</dd>
+                <dt class="col-4">Email</dt><dd class="col-8">@(Model.Me.Email ?? "-")</dd>
+                <dt class="col-4">Cell</dt><dd class="col-8">@(Model.Me.PhoneNumber ?? "Not set yet")</dd>
                 <dt class="col-4">Role</dt><dd class="col-8">@string.Join(", ", Model.MyRoles)</dd>
                 @if (Model.CompanyName is not null)
                 {

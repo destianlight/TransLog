@@ -33,14 +33,14 @@
         <div class="table-responsive">
             <table class="table align-middle">
                 <thead>
-                    <tr><th>Name</th><th>Email</th><th>Role</th><th>Status</th></tr>
+                    <tr><th>Name</th><th>Email and cell</th><th>Role</th><th>Status</th></tr>
                 </thead>
                 <tbody>
                     @foreach (var u in Model.Users)
                     {
                         <tr>
                             <td><a asp-page="/Users/Edit" asp-route-id="@u.Id">@u.FullName</a></td>
-                            <td>@u.Email</td>
+                            <td>@u.Email<div class="small text-body-secondary">@u.Cell</div></td>
                             <td>@u.Role</td>
                             <td>
                                 @if (!u.IsActive)

@@ -14,7 +14,7 @@ public class AdminsModel(UserManager<AppUser> users) : PageModel
         var now = DateTimeOffset.UtcNow;
         Admins = (await users.GetUsersInRoleAsync(Roles.SysAdmin))
             .OrderBy(u => u.FullName)
-            .Select(u => new UserRow(u.Id, u.FullName, u.Email ?? "", Roles.SysAdmin, u.IsActive, u.LockoutEnd > now))
+            .Select(u => new UserRow(u.Id, u.FullName, u.Email ?? "", Roles.SysAdmin, u.IsActive, u.LockoutEnd > now, u.PhoneNumber ?? ""))
             .ToList();
     }
 }

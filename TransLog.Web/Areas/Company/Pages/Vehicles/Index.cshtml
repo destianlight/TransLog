@@ -45,7 +45,7 @@
                                     }
                                 </td>
                                 <td>
-                                    <div>@(string.Join(" ", new[] { v.Make, v.Model, v.Year?.ToString() }.Where(x => !string.IsNullOrWhiteSpace(x))))</div>
+                                    <div>@(string.Join(" ", new[] { v.MakeAndModel, v.Year?.ToString() }.Where(x => !string.IsNullOrWhiteSpace(x))))</div>
                                     <div class="small text-body-secondary">@(string.Join(" · ", new[] { v.VehicleType, v.FuelType }.Where(x => !string.IsNullOrWhiteSpace(x))))</div>
                                 </td>
                                 <td>

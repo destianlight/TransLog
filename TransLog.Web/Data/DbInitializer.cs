@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using TransLog.Web.Fleet;
 using TransLog.Web.Security;
 
 namespace TransLog.Web.Data;
@@ -26,7 +27,26 @@ public static class DbInitializer
                 await roleManager.CreateAsync(new AppRole(role));
         }
 
+        // Part 3c: the make and model catalogue starts with common South African vehicles.
+        await VehicleCatalogSeed.RunAsync(db);
+
         var userManager = sp.GetRequiredService<UserManager<AppUser>>();
+
+        // Part 3c: driver logins made before the Driver role existed were Capturers; move them over.
+        var driverLogins = await db.Drivers.IgnoreQueryFilters()
+            .Where(d => d.UserId != null)
+            .Select(d => d.UserId!.Value)
+            .ToListAsync();
+        foreach (var userId in driverLogins)
+        {
+            var login = await userManager.FindByIdAsync(userId.ToString(System.Globalization.CultureInfo.InvariantCulture));
+            if (login is null || await userManager.IsInRoleAsync(login, Roles.Driver))
+                continue;
+            await userManager.RemoveFromRolesAsync(login, await userManager.GetRolesAsync(login));
+            await userManager.AddToRoleAsync(login, Roles.Driver);
+            logger.LogInformation("Driver login {UserId} moved to the Driver role.", userId);
+        }
+
         if ((await userManager.GetUsersInRoleAsync(Roles.SysAdmin)).Count > 0)
             return;
 
@@ -40,13 +60,12 @@ public static class DbInitializer
 
         var admin = new AppUser
         {
-            UserName = email,
-            Email = email,
-            EmailConfirmed = true,
             FullName = config["SysAdmin:FullName"] ?? "TransLog admin",
             IsActive = true,
             CreatedAt = DateTime.UtcNow,
         };
+        // SysAdmin:Cell is optional here; the admin can add it later on their user page.
+        Logins.Apply(admin, email, config["SysAdmin:Cell"]);
 
         var result = await userManager.CreateAsync(admin, password);
         if (!result.Succeeded)

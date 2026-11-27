@@ -17,7 +17,7 @@ public record LoginDetails(string FullName, string? CompanyName, string LoginUrl
         $"Hi {FullName},\n\n" +
         (CompanyName is null ? "You have a TransLog login.\n\n" : $"You have a TransLog login for {CompanyName}.\n\n") +
         $"Log in: {LoginUrl}\n" +
-        $"Email: {Email}\n" +
+        $"Log in with: {Email}\n" +
         $"Password: {Password}\n\n" +
         "You can change your password under Account after you log in.";
 

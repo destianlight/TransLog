@@ -1,6 +1,7 @@
 @page "{id:int}"
 @model TransLog.Web.Areas.CompanyArea.Pages.Vehicles.EditModel
 @{
+    ViewData["Catalogue"] = Model.Catalogue; // read by _VehicleFields
     ViewData["Title"] = Model.Registration;
 }
 
@@ -67,3 +68,7 @@
         </div>
     </div>
 </section>
+
+@section Scripts {
+    <script src="~/resources/page-vehicle-form.js" asp-append-version="true"></script>
+}

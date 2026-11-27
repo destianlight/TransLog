@@ -18,7 +18,7 @@
 
             <div class="tl-card mb-4">
                 <h2 class="h5 mb-3">Owner</h2>
-                <p class="small text-body-secondary">The owner logs in with this email and password. Send them the password yourself, for example on WhatsApp.</p>
+                <p class="small text-body-secondary">The owner logs in with this email or cell number and the password. Send them the password yourself, for example on WhatsApp.</p>
                 <div class="mb-3">
                     <label asp-for="Owner.FullName" class="form-label">Full name</label>
                     <input asp-for="Owner.FullName" class="form-control" />
@@ -28,6 +28,12 @@
                     <label asp-for="Owner.Email" class="form-label">Email (used to log in)</label>
                     <input asp-for="Owner.Email" class="form-control" type="email" autocomplete="off" />
                     <span asp-validation-for="Owner.Email" class="text-danger small"></span>
+                </div>
+                <div class="mb-3">
+                    <label asp-for="Owner.Cell" class="form-label">Cell number (also works as the login)</label>
+                    <input asp-for="Owner.Cell" class="form-control" type="tel" inputmode="tel" autocomplete="off" />
+                    <div class="form-text">For example 082 123 4567. One cell number can belong to one TransLog user only.</div>
+                    <span asp-validation-for="Owner.Cell" class="text-danger small"></span>
                 </div>
                 <div class="mb-0">
                     <label asp-for="Owner.Password" class="form-label">Password (at least 6 characters)</label>

@@ -12,23 +12,25 @@ public class CreateModel(AppDbContext db, AuditLogger audit) : PageModel
     [BindProperty]
     public VehicleForm Form { get; set; } = new();
 
-    public void OnGet()
-    {
-    }
+    public List<VehicleMake> Catalogue { get; private set; } = [];
+
+    public async Task OnGetAsync() => Catalogue = await FleetChecks.CatalogueAsync(db);
 
     public async Task<IActionResult> OnPostAsync()
     {
         if (User.GetCompanyId() is not int companyId)
             return NotFound();
 
+        Catalogue = await FleetChecks.CatalogueAsync(db);
         var plate = Plates.Normalize(Form.RegistrationNo);
         if (ModelState.IsValid && await FleetChecks.PlateProblemAsync(db, plate, exceptVehicleId: 0) is { } problem)
             ModelState.AddModelError("Form.RegistrationNo", problem);
+        var model = await FleetChecks.CheckModelAsync(db, ModelState, Form, currentModelId: null);
         if (!ModelState.IsValid)
             return Page();
 
         var vehicle = new Vehicle { CompanyId = companyId, RegistrationNo = plate, CreatedAt = DateTime.UtcNow };
-        Form.CopyTo(vehicle);
+        Form.CopyTo(vehicle, model);
         vehicle.IsActive = true;
         db.Vehicles.Add(vehicle);
         audit.Add("VehicleCreated", plate, companyId);

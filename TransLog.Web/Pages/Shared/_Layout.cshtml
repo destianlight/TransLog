@@ -1,6 +1,8 @@
 @* Declared before <html>: variables inside <head> or <body> are not visible outside them. *@
+@inject AreaBadges AreaBadges
 @{
     var signedIn = User.Identity?.IsAuthenticated == true;
+    var badge = signedIn ? await AreaBadges.ForAsync(User) : null;
     var whatsApp = Contact.WhatsAppLink(Configuration);
     var siteUrl = $"{Context.Request.Scheme}://{Context.Request.Host}";
     var pageTitle = ViewData["Title"] is string pt ? $"{pt} – TransLog" : "TransLog";
@@ -53,7 +55,7 @@
         <nav class="navbar navbar-expand-md" aria-label="Main">
             <div class="container">
                 <a class="navbar-brand tl-brand" asp-area="" asp-page="/Index">
-                    <svg class="tl-mark" aria-hidden="true"><use href="/resources/icons.svg#tl-mark"></use></svg>
+                    <svg class="tl-mark" aria-hidden="true"><use href="@(Icons.Sprite)#tl-mark"></use></svg>
                     <span>Trans<span class="tl-accent">Log</span></span>
                 </a>
                 <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNav"
@@ -66,33 +68,36 @@
                         {
                             if (User.IsInRole(Roles.SysAdmin))
                             {
-                                <li class="nav-item"><a class="nav-link" asp-area="SysAdmin" asp-page="/Index">Companies</a></li>
-                                <li class="nav-item"><a class="nav-link" asp-area="SysAdmin" asp-page="/Admins">TransLog admins</a></li>
-                                <li class="nav-item"><a class="nav-link" asp-area="SysAdmin" asp-page="/Audit">Audit log</a></li>
+                                <li class="nav-item"><a class="nav-link tl-navlink" asp-area="SysAdmin" asp-page="/Index">@Icons.Svg("buildings") Companies</a></li>
+                                <li class="nav-item"><a class="nav-link tl-navlink" asp-area="SysAdmin" asp-page="/Models/Index">@Icons.Svg("tags") Vehicle models</a></li>
+                                <li class="nav-item"><a class="nav-link tl-navlink" asp-area="SysAdmin" asp-page="/Admins">@Icons.Svg("person-gear") TransLog admins</a></li>
+                                <li class="nav-item"><a class="nav-link tl-navlink" asp-area="SysAdmin" asp-page="/Audit">@Icons.Svg("journal-text") Audit log</a></li>
+                            }
+                            else if (User.IsInRole(Roles.Driver))
+                            {
+                                <li class="nav-item"><a class="nav-link tl-navlink" asp-area="Driver" asp-page="/Index">@Icons.Svg("house") Home</a></li>
+                                <li class="nav-item"><a class="nav-link tl-navlink" asp-area="Driver" asp-page="/MyVehicle">@Icons.Svg("truck-front") My vehicle</a></li>
                             }
                             else if (User.GetCompanyId() is not null)
                             {
-                                <li class="nav-item"><a class="nav-link" asp-area="Company" asp-page="/Index">Home</a></li>
+                                <li class="nav-item"><a class="nav-link tl-navlink" asp-area="Company" asp-page="/Index">@Icons.Svg("house") Home</a></li>
                                 if (User.IsInRole(Roles.Owner) || User.IsInRole(Roles.Admin))
                                 {
-                                    <li class="nav-item"><a class="nav-link" asp-area="Company" asp-page="/Drivers/Index">Drivers</a></li>
-                                    <li class="nav-item"><a class="nav-link" asp-area="Company" asp-page="/Vehicles/Index">Vehicles</a></li>
-                                }
-                                if (User.IsInRole(Roles.Capturer))
-                                {
-                                    <li class="nav-item"><a class="nav-link" asp-area="Company" asp-page="/MyVehicle">My vehicle</a></li>
+                                    <li class="nav-item"><a class="nav-link tl-navlink" asp-area="Company" asp-page="/Drivers/Index">@Icons.Svg("person-vcard") Drivers</a></li>
+                                    <li class="nav-item"><a class="nav-link tl-navlink" asp-area="Company" asp-page="/Vehicles/Index">@Icons.Svg("truck") Vehicles</a></li>
+                                    <li class="nav-item"><a class="nav-link tl-navlink" asp-area="Company" asp-page="/Links/Index">@Icons.Svg("clock-history") Link history</a></li>
                                 }
                                 if (User.IsInRole(Roles.Owner))
                                 {
-                                    <li class="nav-item"><a class="nav-link" asp-area="Company" asp-page="/Users/Index">Users</a></li>
-                                    <li class="nav-item"><a class="nav-link" asp-area="Company" asp-page="/Settings">Settings</a></li>
-                                    <li class="nav-item"><a class="nav-link" asp-area="Company" asp-page="/Activity">Activity</a></li>
+                                    <li class="nav-item"><a class="nav-link tl-navlink" asp-area="Company" asp-page="/Users/Index">@Icons.Svg("people") Users</a></li>
+                                    <li class="nav-item"><a class="nav-link tl-navlink" asp-area="Company" asp-page="/Settings">@Icons.Svg("gear") Settings</a></li>
+                                    <li class="nav-item"><a class="nav-link tl-navlink" asp-area="Company" asp-page="/Activity">@Icons.Svg("list-check") Activity</a></li>
                                 }
                             }
-                            <li class="nav-item"><a class="nav-link fw-semibold" asp-area="" asp-page="/Account/Index">@User.GetFullName()</a></li>
+                            <li class="nav-item"><a class="nav-link tl-navlink fw-semibold" asp-area="" asp-page="/Account/Index">@Icons.Svg("person-circle") @User.GetFullName()</a></li>
                             <li class="nav-item">
                                 <form method="post" asp-area="" asp-page="/Logout" class="d-inline">
-                                    <button type="submit" class="btn btn-outline-secondary btn-sm ms-md-2">Log out</button>
+                                    <button type="submit" class="btn btn-outline-secondary btn-sm ms-md-2 tl-navlink">@Icons.Svg("box-arrow-right") Log out</button>
                                 </form>
                             </li>
                         }
@@ -108,6 +113,16 @@
                 </div>
             </div>
         </nav>
+        @if (badge is not null)
+        {
+            <div class="tl-areabar @badge.Css" data-area="@badge.Area">
+                <div class="container d-flex align-items-center gap-2 py-2">
+                    <span class="tl-areabar-icon">@Icons.Svg(badge.Icon)</span>
+                    <span class="fw-semibold text-truncate">@badge.Title</span>
+                    <span class="small opacity-75 text-truncate">@badge.Subtitle</span>
+                </div>
+            </div>
+        }
     </header>
 
     <main id="main">

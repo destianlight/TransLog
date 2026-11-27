@@ -1,5 +1,6 @@
 @model VehicleForm
 @{
+    var catalogue = ViewData["Catalogue"] as List<VehicleMake> ?? [];
     var typeItems = VehicleOptions.Types.Select(t => new SelectListItem(t, t)).ToList();
     var fuelItems = VehicleOptions.FuelTypes.Select(t => new SelectListItem(t, t)).ToList();
 }
@@ -15,12 +16,40 @@
         <input asp-for="FleetNo" class="form-control" />
     </div>
     <div class="col-sm-6">
-        <label asp-for="Make" class="form-label">Make</label>
-        <input asp-for="Make" class="form-control" />
+        <label asp-for="MakeChoice" class="form-label">Make</label>
+        <select asp-for="MakeChoice" class="form-select" data-tl-make>
+            <option value="">Not set</option>
+            @foreach (var make in catalogue)
+            {
+                <option value="@make.Id">@make.Name</option>
+            }
+            <option value="@VehicleForm.OtherChoice">Other (not in the list)</option>
+        </select>
+        <span asp-validation-for="MakeChoice" class="text-danger small"></span>
     </div>
-    <div class="col-sm-6">
-        <label asp-for="Model" class="form-label">Model</label>
-        <input asp-for="Model" class="form-control" />
+    <div class="col-sm-6" data-tl-model-box>
+        <label asp-for="VehicleModelId" class="form-label">Model</label>
+        <select asp-for="VehicleModelId" class="form-select" data-tl-model>
+            <option value="">Choose the model</option>
+            @foreach (var make in catalogue)
+            {
+                foreach (var m in make.Models)
+                {
+                    <option value="@m.Id" data-make="@make.Id">@make.Name @m.Name</option>
+                }
+            }
+        </select>
+        <span asp-validation-for="VehicleModelId" class="text-danger small"></span>
+    </div>
+    <div class="col-sm-6" data-tl-other>
+        <label asp-for="OtherMake" class="form-label">Make (typed)</label>
+        <input asp-for="OtherMake" class="form-control" autocomplete="off" />
+        <span asp-validation-for="OtherMake" class="text-danger small"></span>
+    </div>
+    <div class="col-sm-6" data-tl-other>
+        <label asp-for="OtherModel" class="form-label">Model (typed)</label>
+        <input asp-for="OtherModel" class="form-control" autocomplete="off" />
+        <div class="form-text">TransLog adds typed models to the list, so they count in vehicle comparisons.</div>
     </div>
     <div class="col-sm-4">
         <label asp-for="Year" class="form-label">Year</label>

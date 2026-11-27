@@ -55,6 +55,10 @@ public class NewUserForm
     [Required(ErrorMessage = "Enter a password."), StringLength(100, MinimumLength = 6, ErrorMessage = "Use at least 6 characters.")]
     public string Password { get; set; } = "";
 
+    /// <summary>Required for every user and unique on the whole platform; also works as the login (Part 3c).</summary>
+    [Required(ErrorMessage = "Enter the cell number."), StringLength(25)]
+    public string Cell { get; set; } = "";
+
     /// <summary>Only for company users.</summary>
     public string? Role { get; set; }
 }
@@ -70,6 +74,10 @@ public class EditUserForm
     /// <summary>Only for company users.</summary>
     public string? Role { get; set; }
 
+    /// <summary>Required for every user and unique on the whole platform; also works as the login (Part 3c).</summary>
+    [Required(ErrorMessage = "Enter the cell number."), StringLength(25)]
+    public string Cell { get; set; } = "";
+
     public bool IsActive { get; set; }
 
     /// <summary>Leave empty to keep the current password.</summary>
@@ -79,4 +87,4 @@ public class EditUserForm
     public bool Unlock { get; set; }
 }
 
-public record UserRow(int Id, string FullName, string Email, string Role, bool IsActive, bool LockedOut);
+public record UserRow(int Id, string FullName, string Email, string Role, bool IsActive, bool LockedOut, string Cell = "");

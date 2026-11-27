@@ -21,6 +21,7 @@ public class IndexModel(AppDbContext db) : PageModel
         Vehicles = await db.Vehicles
             .AsNoTracking()
             .Include(v => v.Aliases)
+            .Include(v => v.VehicleModel!).ThenInclude(m => m.Make)
             .OrderByDescending(v => v.IsActive)
             .ThenBy(v => v.RegistrationNo)
             .ToListAsync();

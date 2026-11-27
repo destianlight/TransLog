@@ -32,6 +32,7 @@ public sealed class Scenario(TestApp app)
             ["Owner.FullName"] = "Owner of " + name,
             ["Owner.Email"] = ownerEmail,
             ["Owner.Password"] = "owner1",
+            ["Owner.Cell"] = Cells.Next(),
         });
         Assert.Equal(HttpStatusCode.Redirect, r.StatusCode);
         return await LoginAsync(ownerEmail, "owner1");
@@ -44,6 +45,7 @@ public sealed class Scenario(TestApp app)
         {
             ["Form.FullName"] = fullName,
             ["Form.Email"] = email,
+            ["Form.Cell"] = Cells.Next(),
             ["Form.Password"] = "user11",
             ["Form.Role"] = role,
         });

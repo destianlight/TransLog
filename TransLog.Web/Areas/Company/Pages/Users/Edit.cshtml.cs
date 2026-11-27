@@ -22,6 +22,9 @@ public class EditModel(AppDbContext db, UserManager<AppUser> users, AuditLogger 
 
     public bool LockedOut { get; private set; }
 
+    /// <summary>Set when this login belongs to a driver: then only the password and unlock are changed here.</summary>
+    public int? DriverId { get; private set; }
+
     public IEnumerable<SelectListItem> RoleOptions =>
         Roles.OwnerCanGive.Select(r => new SelectListItem(r, r));
 
@@ -31,11 +34,12 @@ public class EditModel(AppDbContext db, UserManager<AppUser> users, AuditLogger 
             return NotFound();
 
         var (user, role) = found;
-        Load(user);
+        await LoadAsync(user);
         Form = new EditUserForm
         {
             FullName = user.FullName,
             Email = user.Email ?? "",
+            Cell = user.PhoneNumber ?? "",
             IsActive = user.IsActive,
             Role = role,
         };
@@ -48,31 +52,45 @@ public class EditModel(AppDbContext db, UserManager<AppUser> users, AuditLogger 
             return NotFound();
 
         var (user, currentRole) = found;
-        Load(user);
+        await LoadAsync(user);
 
-        if (Form.Role is null || !Roles.OwnerCanGive.Contains(Form.Role))
+        // A driver's login keeps its details from the driver's page: only the password and unlock count here.
+        var isDriver = DriverId is not null;
+        if (isDriver)
+        {
+            foreach (var key in new[] { "Form.FullName", "Form.Email", "Form.Cell", "Form.Role", "Form.IsActive" })
+                ModelState.Remove(key);
+            Form.FullName = user.FullName;
+            Form.Email = user.Email ?? "";
+            Form.Cell = user.PhoneNumber ?? "";
+            Form.Role = currentRole;
+            Form.IsActive = user.IsActive;
+        }
+        else if (Form.Role is null || !Roles.OwnerCanGive.Contains(Form.Role))
             ModelState.AddModelError("Form.Role", "Choose a role.");
         if (!ModelState.IsValid)
             return Page();
 
         var changes = new List<string>();
         var email = Form.Email.Trim();
+        var cell = TransLog.Web.Fleet.CellNumbers.Normalize(Form.Cell);
         var switchedOff = user.IsActive && !Form.IsActive;
 
-        if (!string.Equals(user.Email, email, StringComparison.OrdinalIgnoreCase))
+        if (!string.Equals(user.Email ?? "", email, StringComparison.OrdinalIgnoreCase))
             changes.Add($"email {user.Email} -> {email}");
+        if (user.PhoneNumber != cell)
+            changes.Add($"cell {user.PhoneNumber} -> {cell}");
         if (user.IsActive != Form.IsActive)
             changes.Add(Form.IsActive ? "switched on" : "switched off");
 
         user.FullName = Form.FullName.Trim();
-        user.Email = email;
-        user.UserName = email;
+        Logins.Apply(user, email, cell);
         user.IsActive = Form.IsActive;
 
         if (!AddErrors(await users.UpdateAsync(user)))
             return Page();
 
-        if (currentRole != Form.Role)
+        if (!isDriver && currentRole != Form.Role)
         {
             if (!AddErrors(await users.RemoveFromRolesAsync(user, await users.GetRolesAsync(user))) ||
                 !AddErrors(await users.AddToRoleAsync(user, Form.Role!)))
@@ -105,7 +123,7 @@ public class EditModel(AppDbContext db, UserManager<AppUser> users, AuditLogger 
         if (!string.IsNullOrEmpty(Form.NewPassword))
         {
             var companyName = (await db.Companies.FindAsync(user.CompanyId))?.Name;
-            LoginDetails.Keep(this, user.FullName, companyName, email, Form.NewPassword);
+            LoginDetails.Keep(this, user.FullName, companyName, Logins.Describe(user), Form.NewPassword);
         }
         return RedirectToPage("Index");
     }
@@ -122,10 +140,12 @@ public class EditModel(AppDbContext db, UserManager<AppUser> users, AuditLogger 
         return role == Roles.Owner ? null : (user, role);
     }
 
-    private void Load(AppUser user)
+    private async Task LoadAsync(AppUser user)
     {
         Id = user.Id;
         LockedOut = user.LockoutEnd > DateTimeOffset.UtcNow;
+        // The tenant filter keeps this inside the Owner's company.
+        DriverId = await db.Drivers.Where(d => d.UserId == user.Id).Select(d => (int?)d.Id).FirstOrDefaultAsync();
     }
 
     private bool AddErrors(IdentityResult result)

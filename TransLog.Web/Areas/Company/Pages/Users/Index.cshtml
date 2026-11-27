@@ -19,14 +19,15 @@
         <partial name="_LoginDetails" />
 
         <p class="text-body-secondary small">
-            Admin: manages drivers, vehicles and slips (from Part 3). Capturer: photographs slips. Viewer: sees reports only.
+            Admin: manages drivers, vehicles and slips. Capturer: office staff who capture slips for any driver or vehicle and see all slips.
+            Viewer: sees reports only. Driver: a login given from the driver's page; it opens only the driver screens.
             Owners are added and changed by TransLog; ask us on WhatsApp.
         </p>
 
         <div class="table-responsive">
             <table class="table align-middle">
                 <thead>
-                    <tr><th>Name</th><th>Email</th><th>Role</th><th>Status</th></tr>
+                    <tr><th>Name</th><th>Email and cell</th><th>Role</th><th>Status</th></tr>
                 </thead>
                 <tbody>
                     @foreach (var u in Model.Users)
@@ -42,7 +43,7 @@
                                     <a asp-page="Edit" asp-route-id="@u.Id">@u.FullName</a>
                                 }
                             </td>
-                            <td>@u.Email</td>
+                            <td>@u.Email<div class="small text-body-secondary">@u.Cell</div></td>
                             <td>@u.Role</td>
                             <td>
                                 @if (!u.IsActive)

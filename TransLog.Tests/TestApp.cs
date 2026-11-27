@@ -77,9 +77,21 @@ public sealed partial class Browser(HttpClient client)
         return await client.PostAsync(url, new FormUrlEncodedContent(all));
     }
 
-    public Task<HttpResponseMessage> LoginAsync(string email, string password) =>
-        PostFormAsync("/login", new() { ["Email"] = email, ["Password"] = password });
+    /// <summary>Logs in with an email or a cell number (Part 3c).</summary>
+    public Task<HttpResponseMessage> LoginAsync(string login, string password) =>
+        PostFormAsync("/login", new() { ["Login"] = login, ["Password"] = password });
 
     [GeneratedRegex("name=\"__RequestVerificationToken\"[^>]*value=\"([^\"]+)\"")]
     private static partial Regex TokenRegex();
+}
+
+/// <summary>
+/// Fresh cell numbers for test users (Part 3c: every user needs one, unique on the whole platform).
+/// They start with 06 so they never clash with the 08 numbers that tests type for drivers.
+/// </summary>
+public static class Cells
+{
+    private static int _next = 1000;
+
+    public static string Next() => "06" + Interlocked.Increment(ref _next).ToString("D8");
 }

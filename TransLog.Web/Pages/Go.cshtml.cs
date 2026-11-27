@@ -11,6 +11,8 @@ public class GoModel : PageModel
     {
         if (User.IsInRole(Roles.SysAdmin))
             return RedirectToPage("/Index", new { area = "SysAdmin" });
+        if (User.IsInRole(Roles.Driver) && User.GetCompanyId() is not null)
+            return RedirectToPage("/Index", new { area = "Driver" });
         if (User.GetCompanyId() is not null)
             return RedirectToPage("/Index", new { area = "Company" });
         return RedirectToPage("/Account/Index", new { area = "" });

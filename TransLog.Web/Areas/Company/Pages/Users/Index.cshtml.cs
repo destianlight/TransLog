@@ -20,7 +20,7 @@ public class IndexModel(AppDbContext db, UserManager<AppUser> users) : PageModel
         foreach (var u in await db.Users.Where(u => u.CompanyId == companyId).OrderBy(u => u.FullName).ToListAsync())
         {
             var role = (await users.GetRolesAsync(u)).FirstOrDefault() ?? "";
-            Users.Add(new UserRow(u.Id, u.FullName, u.Email ?? "", role, u.IsActive, u.LockoutEnd > now));
+            Users.Add(new UserRow(u.Id, u.FullName, u.Email ?? "", role, u.IsActive, u.LockoutEnd > now, u.PhoneNumber ?? ""));
         }
     }
 }

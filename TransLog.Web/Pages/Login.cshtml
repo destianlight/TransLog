@@ -16,9 +16,9 @@
         <form method="post" class="tl-card">
             <input type="hidden" asp-for="ReturnUrl" />
             <div class="mb-3">
-                <label asp-for="Email" class="form-label">Email</label>
-                <input asp-for="Email" class="form-control" autocomplete="username" autofocus />
-                <span asp-validation-for="Email" class="text-danger small"></span>
+                <label asp-for="Login" class="form-label">Email or cell number</label>
+                <input asp-for="Login" class="form-control" autocomplete="username" autocapitalize="none" autofocus />
+                <span asp-validation-for="Login" class="text-danger small"></span>
             </div>
             <div class="mb-3">
                 <label asp-for="Password" class="form-label">Password</label>

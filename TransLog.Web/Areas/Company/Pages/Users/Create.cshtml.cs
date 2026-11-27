@@ -34,14 +34,12 @@ public class CreateModel(AppDbContext db, UserManager<AppUser> users, AuditLogge
         var email = Form.Email.Trim();
         var user = new AppUser
         {
-            UserName = email,
-            Email = email,
-            EmailConfirmed = true,
             FullName = Form.FullName.Trim(),
             CompanyId = companyId,
             IsActive = true,
             CreatedAt = DateTime.UtcNow,
         };
+        Logins.Apply(user, email, Form.Cell);
 
         var result = await users.CreateAsync(user, Form.Password);
         if (result.Succeeded)
@@ -57,7 +55,7 @@ public class CreateModel(AppDbContext db, UserManager<AppUser> users, AuditLogge
         await db.SaveChangesAsync();
 
         TempData["Message"] = $"{user.FullName} added.";
-        LoginDetails.Keep(this, user.FullName, company.Name, email, Form.Password);
+        LoginDetails.Keep(this, user.FullName, company.Name, Logins.Describe(user), Form.Password);
         return RedirectToPage("Index");
     }
 }

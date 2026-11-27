@@ -76,17 +76,16 @@
             <h2 class="h5">Login</h2>
             @if (Model.HasLogin)
             {
-                <p class="small mb-0">This driver logs in with the email above. The Owner can set a new password under Users.</p>
-            }
-            else if (string.IsNullOrWhiteSpace(Model.SavedEmail))
-            {
-                <p class="small text-body-secondary mb-0">To let this driver log in and pick their own vehicle, add their email above and save. The email is the login.</p>
+                <p class="small mb-0">
+                    This driver logs in with <strong>@Model.LoginWith</strong>.
+                    Changes to the name, email, cell number or on and off above also change the login. The Owner can set a new password under Users.
+                </p>
             }
             else
             {
                 <p class="small text-body-secondary">
-                    Lets @Model.DriverName log in with <strong>@Model.SavedEmail</strong> and the password you set.
-                    You get a message to copy and send.
+                    Lets @Model.DriverName log in with <strong>@Model.LoginWith</strong>
+                    and the password you set. You get a message to copy and send.
                 </p>
                 <form method="post" asp-page-handler="GiveLogin" asp-route-id="@Model.Id" class="d-flex flex-wrap gap-2">
                     <input name="password" type="text" class="form-control w-auto flex-grow-1" minlength="6" required

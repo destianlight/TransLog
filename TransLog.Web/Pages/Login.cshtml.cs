@@ -5,17 +5,19 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
 using TransLog.Web.Data;
+using TransLog.Web.Security;
 
 namespace TransLog.Web.Pages;
 
 [AllowAnonymous]
 public class LoginModel(SignInManager<AppUser> signIn, UserManager<AppUser> users, AppDbContext db) : PageModel
 {
-    // One message for every failure, so nobody can find out which emails exist.
-    private const string Failed = "Login failed. Check your email and password.";
+    // One message for every failure, so nobody can find out which emails or cell numbers exist.
+    private const string Failed = "Login failed. Check your email or cell number and your password.";
 
-    [BindProperty, Required(ErrorMessage = "Enter your email."), EmailAddress(ErrorMessage = "Enter a valid email.")]
-    public string Email { get; set; } = "";
+    /// <summary>An email or a cell number (Part 3c).</summary>
+    [BindProperty, Required(ErrorMessage = "Enter your email or cell number."), StringLength(256)]
+    public string Login { get; set; } = "";
 
     [BindProperty, Required(ErrorMessage = "Enter your password."), DataType(DataType.Password)]
     public string Password { get; set; } = "";
@@ -36,7 +38,7 @@ public class LoginModel(SignInManager<AppUser> signIn, UserManager<AppUser> user
         if (!ModelState.IsValid)
             return Page();
 
-        var user = await users.FindByEmailAsync(Email.Trim());
+        var user = await Logins.FindAsync(users, Login);
         if (user is null || !user.IsActive || !await CompanyIsActiveAsync(user))
         {
             Error = Failed;

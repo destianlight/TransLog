@@ -20,6 +20,9 @@ public class EditModel(AppDbContext db, UserManager<AppUser> users, AuditLogger 
 
     public bool LockedOut { get; private set; }
 
+    /// <summary>True when this login belongs to a driver: the role stays Driver and the details come from the driver's page.</summary>
+    public bool IsDriverLogin { get; private set; }
+
     public IEnumerable<SelectListItem> RoleOptions =>
         Roles.Company.Select(r => new SelectListItem(r, r));
 
@@ -34,6 +37,7 @@ public class EditModel(AppDbContext db, UserManager<AppUser> users, AuditLogger 
         {
             FullName = user.FullName,
             Email = user.Email ?? "",
+            Cell = user.PhoneNumber ?? "",
             IsActive = user.IsActive,
             Role = (await users.GetRolesAsync(user)).FirstOrDefault(),
         };
@@ -47,7 +51,18 @@ public class EditModel(AppDbContext db, UserManager<AppUser> users, AuditLogger 
             return NotFound();
         await LoadAsync(user);
 
-        if (user.CompanyId is not null && (Form.Role is null || !Roles.Company.Contains(Form.Role)))
+        if (IsDriverLogin)
+        {
+            // A driver's name, email, cell and on/off come from the driver's page; the role stays Driver.
+            foreach (var key in new[] { "Form.FullName", "Form.Email", "Form.Cell", "Form.Role", "Form.IsActive" })
+                ModelState.Remove(key);
+            Form.FullName = user.FullName;
+            Form.Email = user.Email ?? "";
+            Form.Cell = user.PhoneNumber ?? "";
+            Form.Role = Roles.Driver;
+            Form.IsActive = user.IsActive;
+        }
+        else if (user.CompanyId is not null && (Form.Role is null || !Roles.Company.Contains(Form.Role)))
             ModelState.AddModelError("Form.Role", "Choose a role.");
         if (user.Id == User.GetUserId() && !Form.IsActive)
             ModelState.AddModelError("Form.IsActive", "You cannot switch yourself off.");
@@ -56,23 +71,25 @@ public class EditModel(AppDbContext db, UserManager<AppUser> users, AuditLogger 
 
         var changes = new List<string>();
         var email = Form.Email.Trim();
+        var cell = TransLog.Web.Fleet.CellNumbers.Normalize(Form.Cell);
         var switchedOff = user.IsActive && !Form.IsActive;
 
-        if (!string.Equals(user.Email, email, StringComparison.OrdinalIgnoreCase))
+        if (!string.Equals(user.Email ?? "", email, StringComparison.OrdinalIgnoreCase))
             changes.Add($"email {user.Email} -> {email}");
+        if (user.PhoneNumber != cell)
+            changes.Add($"cell {user.PhoneNumber} -> {cell}");
         if (user.IsActive != Form.IsActive)
             changes.Add(Form.IsActive ? "switched on" : "switched off");
 
         user.FullName = Form.FullName.Trim();
-        user.Email = email;
-        user.UserName = email;
+        Logins.Apply(user, email, cell);
         user.IsActive = Form.IsActive;
 
         var result = await users.UpdateAsync(user);
         if (!AddErrors(result))
             return Page();
 
-        if (user.CompanyId is not null)
+        if (user.CompanyId is not null && !IsDriverLogin)
         {
             var current = await users.GetRolesAsync(user);
             if (!current.Contains(Form.Role!))
@@ -107,7 +124,7 @@ public class EditModel(AppDbContext db, UserManager<AppUser> users, AuditLogger 
 
         TempData["Message"] = $"{user.FullName} saved.";
         if (!string.IsNullOrEmpty(Form.NewPassword))
-            LoginDetails.Keep(this, user.FullName, CompanyName, email, Form.NewPassword);
+            LoginDetails.Keep(this, user.FullName, CompanyName, Logins.Describe(user), Form.NewPassword);
         return user.CompanyId is int companyId
             ? RedirectToPage("/Companies/Edit", new { id = companyId })
             : RedirectToPage("/Admins");
@@ -118,6 +135,7 @@ public class EditModel(AppDbContext db, UserManager<AppUser> users, AuditLogger 
         Id = user.Id;
         CompanyId = user.CompanyId;
         LockedOut = user.LockoutEnd > DateTimeOffset.UtcNow;
+        IsDriverLogin = await users.IsInRoleAsync(user, Roles.Driver);
         if (user.CompanyId is int companyId)
             CompanyName = (await db.Companies.FindAsync(companyId))?.Name;
     }

@@ -1,0 +1,39 @@
+@page
+@model IndexModel
+@{
+    ViewData["Title"] = "Driver";
+}
+
+<section class="tl-section pt-4">
+    <div class="container" style="max-width: 560px">
+        <p class="tl-eyebrow mb-1">@Model.CompanyName</p>
+        <h1 class="tl-h2 mb-4">Hi, @User.GetFullName()</h1>
+
+        @if (!Model.HasDriver)
+        {
+            <div class="tl-card mb-3">
+                <p class="mb-0">Your login is not linked to a driver. Ask your company to check your driver details.</p>
+            </div>
+        }
+
+        <div class="d-grid gap-3">
+            <div class="tl-card tl-bigbtn text-body-secondary" aria-disabled="true">
+                @Icons.Svg("camera")
+                <span>Photograph a slip<span class="d-block small fw-normal">Coming in Part 4</span></span>
+            </div>
+            <a class="tl-card tl-card-link tl-bigbtn" asp-page="/MyVehicle">
+                @Icons.Svg("truck-front")
+                <span>
+                    My vehicle
+                    <span class="d-block small fw-normal text-body-secondary">
+                        @(Model.Current is { } c ? $"Driving {c.Vehicle}" : "No vehicle yet")
+                    </span>
+                </span>
+            </a>
+            <div class="tl-card tl-bigbtn text-body-secondary" aria-disabled="true">
+                @Icons.Svg("images")
+                <span>My slips<span class="d-block small fw-normal">Coming in Part 5</span></span>
+            </div>
+        </div>
+    </div>
+</section>

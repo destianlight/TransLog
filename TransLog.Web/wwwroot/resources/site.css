@@ -213,3 +213,37 @@ a.tl-card-link:hover, a.tl-card-link:focus-visible { border-color: var(--tl-oran
     .tl-d2 { top: 190px !important; }
     .tl-d3 { top: 340px !important; }
 }
+
+/* ---- Icons (Part 3c): Bootstrap Icons from icons.svg, sized like text ---- */
+.bi {
+    display: inline-block;
+    width: 1em;
+    height: 1em;
+    vertical-align: -.125em;
+    flex-shrink: 0;
+}
+.tl-navlink { display: inline-flex; align-items: center; gap: .45rem; }
+
+/* ---- Area bar: which area you are in (System admin dark, Company blue, Driver green) ---- */
+.tl-areabar { font-size: .95rem; }
+.tl-areabar-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2rem;
+    height: 2rem;
+    border-radius: .5rem;
+    background: rgba(255, 255, 255, .18);
+    font-size: 1.1rem;
+}
+
+/* ---- Driver area: big buttons for a phone ---- */
+.tl-bigbtn {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1.25rem;
+    font-size: 1.15rem;
+    font-weight: 600;
+}
+.tl-bigbtn .bi { font-size: 1.75rem; color: var(--tl-accent-text); }

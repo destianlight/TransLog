@@ -42,11 +42,14 @@ builder.Services
         o.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(5);
         o.Lockout.AllowedForNewUsers = true;
 
-        o.User.RequireUniqueEmail = true;
+        // Drivers may have no email, so Identity's own email check is off; AppUserValidator checks that
+        // emails and cell numbers are unique (Part 3c).
+        o.User.RequireUniqueEmail = false;
         o.SignIn.RequireConfirmedAccount = false;
     })
     .AddEntityFrameworkStores<AppDbContext>()
     .AddDefaultTokenProviders()
+    .AddUserValidator<AppUserValidator>()
     .AddClaimsPrincipalFactory<AppClaimsFactory>();
 
 builder.Services.ConfigureApplicationCookie(o =>
@@ -73,12 +76,14 @@ builder.Services.AddAuthorizationBuilder()
     .AddPolicy(Policies.SysAdmin, p => p.RequireRole(Roles.SysAdmin))
     .AddPolicy(Policies.CompanyMember, p => p.RequireRole(Roles.Company).RequireClaim(AppClaims.CompanyId))
     .AddPolicy(Policies.CompanyOwner, p => p.RequireRole(Roles.Owner).RequireClaim(AppClaims.CompanyId))
-    .AddPolicy(Policies.CompanyAdmin, p => p.RequireRole(Roles.Owner, Roles.Admin).RequireClaim(AppClaims.CompanyId));
+    .AddPolicy(Policies.CompanyAdmin, p => p.RequireRole(Roles.Owner, Roles.Admin).RequireClaim(AppClaims.CompanyId))
+    .AddPolicy(Policies.DriverMember, p => p.RequireRole(Roles.Driver).RequireClaim(AppClaims.CompanyId));
 
 builder.Services.AddRazorPages(o =>
 {
     o.Conventions.AuthorizeAreaFolder("SysAdmin", "/", Policies.SysAdmin);
     o.Conventions.AuthorizeAreaFolder("Company", "/", Policies.CompanyMember);
+    o.Conventions.AuthorizeAreaFolder("Driver", "/", Policies.DriverMember);
     // Only the Owner manages users and settings (both rules apply).
     o.Conventions.AuthorizeAreaFolder("Company", "/Users", Policies.CompanyOwner);
     o.Conventions.AuthorizeAreaPage("Company", "/Settings", Policies.CompanyOwner);
@@ -93,6 +98,7 @@ builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<AuditLogger>();
 builder.Services.AddScoped<CurrentCompany>();
 builder.Services.AddScoped<TransLog.Web.Areas.CompanyArea.LinkService>();
+builder.Services.AddScoped<AreaBadges>();
 
 builder.Services.Configure<RequestLocalizationOptions>(o =>
 {

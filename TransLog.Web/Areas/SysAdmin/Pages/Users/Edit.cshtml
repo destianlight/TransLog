@@ -20,6 +20,15 @@
 
         <form method="post" class="tl-card">
             <div asp-validation-summary="ModelOnly" class="alert alert-danger small" role="alert"></div>
+            @if (Model.IsDriverLogin)
+            {
+                <div class="alert alert-info small">
+                    This is a driver's login (@Model.Form.Email @Model.Form.Cell). Its name, email, cell number and on or off
+                    follow the driver's page in the company; here you can set a new password or unlock it.
+                </div>
+            }
+            else
+            {
             <div class="mb-3">
                 <label asp-for="Form.FullName" class="form-label">Full name</label>
                 <input asp-for="Form.FullName" class="form-control" />
@@ -30,7 +39,13 @@
                 <input asp-for="Form.Email" class="form-control" type="email" autocomplete="off" />
                 <span asp-validation-for="Form.Email" class="text-danger small"></span>
             </div>
-            @if (Model.CompanyId is not null)
+            <div class="mb-3">
+                <label asp-for="Form.Cell" class="form-label">Cell number (also works as the login)</label>
+                <input asp-for="Form.Cell" class="form-control" type="tel" inputmode="tel" autocomplete="off" />
+                <div class="form-text">For example 082 123 4567. One cell number can belong to one TransLog user only.</div>
+                <span asp-validation-for="Form.Cell" class="text-danger small"></span>
+            </div>
+            if (Model.CompanyId is not null)
             {
                 <div class="mb-3">
                     <label asp-for="Form.Role" class="form-label">Role</label>
@@ -38,16 +53,20 @@
                     <span asp-validation-for="Form.Role" class="text-danger small"></span>
                 </div>
             }
+            }
             <div class="mb-3">
                 <label asp-for="Form.NewPassword" class="form-label">New password (leave empty to keep the current one)</label>
                 <input asp-for="Form.NewPassword" class="form-control" type="text" autocomplete="off" />
                 <span asp-validation-for="Form.NewPassword" class="text-danger small"></span>
             </div>
-            <div class="form-check form-switch mb-2">
-                <input asp-for="Form.IsActive" class="form-check-input" role="switch" />
-                <label asp-for="Form.IsActive" class="form-check-label">User is active</label>
-                <span asp-validation-for="Form.IsActive" class="text-danger small d-block"></span>
-            </div>
+            @if (!Model.IsDriverLogin)
+            {
+                <div class="form-check form-switch mb-2">
+                    <input asp-for="Form.IsActive" class="form-check-input" role="switch" />
+                    <label asp-for="Form.IsActive" class="form-check-label">User is active</label>
+                    <span asp-validation-for="Form.IsActive" class="text-danger small d-block"></span>
+                </div>
+            }
             @if (Model.LockedOut)
             {
                 <div class="form-check mb-2">

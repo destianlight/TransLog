@@ -32,7 +32,7 @@ public class CreateModel(AppDbContext db, UserManager<AppUser> users, AuditLogge
         }
 
         var email = Owner.Email.Trim();
-        if (await users.FindByEmailAsync(email) is not null)
+        if (await Logins.FindAsync(users, email) is not null)
         {
             ModelState.AddModelError("Owner.Email", "A user with this email already exists.");
             return Page();
@@ -47,14 +47,12 @@ public class CreateModel(AppDbContext db, UserManager<AppUser> users, AuditLogge
 
         var owner = new AppUser
         {
-            UserName = email,
-            Email = email,
-            EmailConfirmed = true,
             FullName = Owner.FullName.Trim(),
             CompanyId = company.Id,
             IsActive = true,
             CreatedAt = DateTime.UtcNow,
         };
+        Logins.Apply(owner, email, Owner.Cell);
 
         var result = await users.CreateAsync(owner, Owner.Password);
         if (result.Succeeded)
@@ -71,8 +69,8 @@ public class CreateModel(AppDbContext db, UserManager<AppUser> users, AuditLogge
         await db.SaveChangesAsync();
         await tx.CommitAsync();
 
-        TempData["Message"] = $"{company.Name} created. {owner.FullName} can now log in with {email}.";
-        LoginDetails.Keep(this, owner.FullName, company.Name, email, Owner.Password);
+        TempData["Message"] = $"{company.Name} created. {owner.FullName} can now log in with {Logins.Describe(owner)}.";
+        LoginDetails.Keep(this, owner.FullName, company.Name, Logins.Describe(owner), Owner.Password);
         return RedirectToPage("/Companies/Edit", new { id = company.Id });
     }
 }

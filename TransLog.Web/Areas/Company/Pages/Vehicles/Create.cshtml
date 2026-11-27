@@ -1,6 +1,7 @@
 @page
 @model TransLog.Web.Areas.CompanyArea.Pages.Vehicles.CreateModel
 @{
+    ViewData["Catalogue"] = Model.Catalogue; // read by _VehicleFields
     ViewData["Title"] = "Add vehicle";
 }
 
@@ -16,3 +17,7 @@
         </form>
     </div>
 </section>
+
+@section Scripts {
+    <script src="~/resources/page-vehicle-form.js" asp-append-version="true"></script>
+}
