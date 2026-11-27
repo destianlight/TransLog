@@ -11,6 +11,9 @@ using TransLog.Web.Security;
 CultureInfo.DefaultThreadCurrentCulture = AppCulture.ZA;
 CultureInfo.DefaultThreadCurrentUICulture = AppCulture.ZA;
 
+// A crash during startup is written to logs\startup-error.txt next to the app (the stdout log can stay empty on IIS).
+AppDomain.CurrentDomain.UnhandledException += (_, e) => WriteStartupError(e.ExceptionObject);
+
 var builder = WebApplication.CreateBuilder(args);
 
 // ---- Database: the connection string lives only on the server (appsettings.Production.json) ----
@@ -102,7 +105,15 @@ builder.Services.Configure<RequestLocalizationOptions>(o =>
 var app = builder.Build();
 
 // Migrations, roles and the first system admin.
-await DbInitializer.RunAsync(app.Services, app.Configuration, app.Logger);
+try
+{
+    await DbInitializer.RunAsync(app.Services, app.Configuration, app.Logger);
+}
+catch (Exception ex)
+{
+    WriteStartupError(ex);
+    throw;
+}
 
 if (!app.Environment.IsDevelopment())
 {
@@ -120,6 +131,21 @@ app.MapStaticAssets().AllowAnonymous();
 app.MapRazorPages().WithStaticAssets();
 
 app.Run();
+
+static void WriteStartupError(object error)
+{
+    try
+    {
+        var folder = Path.Combine(AppContext.BaseDirectory, "logs");
+        Directory.CreateDirectory(folder);
+        File.AppendAllText(Path.Combine(folder, "startup-error.txt"),
+            $"{DateTime.UtcNow:yyyy-MM-dd HH:mm:ss} UTC{Environment.NewLine}{error}{Environment.NewLine}{Environment.NewLine}");
+    }
+    catch
+    {
+        // Nowhere left to write it.
+    }
+}
 
 // Lets the test project start the app.
 public partial class Program { }
