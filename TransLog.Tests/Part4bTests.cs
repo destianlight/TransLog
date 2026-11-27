@@ -139,7 +139,8 @@ public class Part4bTests(TestApp app) : IClassFixture<TestApp>
         Assert.Contains("Naledi Officetwo", html);
         Assert.Contains("OC200GP", html);
         Assert.Contains($"\"{driver}\":{vehicle}", html);
-        Assert.Contains("page-office-capture.js", html);
+        // The script URL may be fingerprinted by MapStaticAssets (page-office-capture.<hash>.js).
+        Assert.Contains("/resources/page-office-capture", html);
     }
 
     [Fact]
