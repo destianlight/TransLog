@@ -1,0 +1,658 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0B1F3A">
+<title>TransLog camera test v3</title>
+<style>
+  :root { color-scheme: light dark; --o: #F97316; --n: #0B1F3A; --glass: rgba(0,0,0,.42); }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  body { margin: 0; font: 15px/1.4 system-ui, sans-serif; background: Canvas; color: CanvasText; }
+  body.cam-open { overflow: hidden; }
+  [hidden] { display: none !important; }
+
+  /* ---------- Results page (home) ---------- */
+  header { background: var(--n); color: #fff; padding: 10px 14px; font-size: 17px; display: flex; align-items: center; }
+  header .ver { color: var(--o); font-weight: 700; margin-left: 6px; }
+  header small { margin-left: auto; opacity: .7; }
+  main { padding: 12px; max-width: 640px; margin: 0 auto; }
+  h2 { font-size: 16px; margin: 16px 0 8px; }
+  .open { width: 100%; padding: 16px; border: 0; border-radius: 14px; background: var(--o); color: #fff; font: 700 17px system-ui; cursor: pointer; }
+  .warn { background: #b91c1c; color: #fff; padding: 8px 10px; border-radius: 8px; margin-bottom: 10px; }
+  .note { background: #fef3c7; color: #78350f; padding: 8px 10px; border-radius: 8px; margin-bottom: 10px; }
+  .intro { font-size: 13px; opacity: .85; }
+  .card { border: 1px solid color-mix(in srgb, CanvasText 20%, transparent); border-radius: 12px; padding: 10px; margin-bottom: 10px; display: flex; gap: 10px; }
+  .card img { width: 96px; height: 128px; object-fit: cover; border-radius: 6px; background: #333; flex: none; }
+  .card .t { font-size: 13px; flex: 1; min-width: 0; }
+  .card .row { display: flex; gap: 6px; margin-top: 6px; }
+  .card .row button, .copy { flex: 1; padding: 8px 4px; border: 0; border-radius: 8px; background: var(--n); color: #fff; font: 600 13px system-ui; cursor: pointer; }
+  textarea { width: 100%; height: 220px; font: 12px/1.35 ui-monospace, monospace; border-radius: 8px; padding: 8px; }
+  .copy { width: 100%; padding: 12px; margin-top: 8px; font-size: 15px; }
+
+  /* ---------- Camera: whole screen, everything floats over the feed ---------- */
+  .cam { position: fixed; inset: 0; z-index: 20; background: #000; color: #fff; overflow: hidden; touch-action: manipulation; }
+  .cam video, .cam canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+  .cam video { object-fit: cover; }
+  #review { object-fit: contain; background: #000; }
+  #fx { pointer-events: none; }
+  #tap { position: absolute; inset: 0; }
+  #flash { position: absolute; inset: 0; background: #fff; opacity: 0; pointer-events: none; }
+
+  .glass { background: var(--glass); -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); color: #fff; border: 0; }
+  .round { width: 56px; height: 56px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font: 600 20px system-ui; cursor: pointer; padding: 0; position: relative; }
+  .round svg { width: 26px; height: 26px; fill: currentColor; }
+  .round.sm { width: 40px; height: 40px; font-size: 18px; }
+  .round:disabled { opacity: .35; }
+  .round.on { background: var(--o); }
+  .pill { padding: 8px 12px; border-radius: 20px; font: 600 13px system-ui; cursor: pointer; white-space: nowrap; }
+  .pill input { display: none; }
+  .seg { display: inline-flex; border-radius: 20px; overflow: hidden; }
+  .seg button { padding: 8px 11px; font: 600 13px system-ui; background: transparent; color: #fff; border: 0; cursor: pointer; }
+  .seg button.on { background: var(--o); }
+
+  .top { position: absolute; top: max(10px, env(safe-area-inset-top)); left: 10px; right: 10px; display: flex; gap: 6px; align-items: center; }
+  .top .sp { flex: 1; }
+  .coach { position: absolute; left: 50%; top: calc(max(10px, env(safe-area-inset-top)) + 52px); transform: translateX(-50%);
+           padding: 8px 16px; border-radius: 20px; font: 700 15px system-ui; white-space: nowrap; transition: background .2s; }
+  .coach.good { background: rgba(249,115,22,.85); }
+  .debug { position: absolute; left: 0; right: 0; bottom: calc(max(18px, env(safe-area-inset-bottom)) + 92px); text-align: center; font: 11px ui-monospace, monospace; text-shadow: 0 1px 2px #000; opacity: .85; pointer-events: none; }
+
+  .bottom { position: absolute; left: 0; right: 0; bottom: max(18px, env(safe-area-inset-bottom)); display: flex; justify-content: space-around; align-items: center; }
+  .shutter { width: 80px; height: 80px; border-radius: 50%; border: 5px solid #fff; background: rgba(255,255,255,.22); cursor: pointer; padding: 0; transition: transform .1s, border-color .2s; }
+  .shutter:active { transform: scale(.92); background: rgba(255,255,255,.6); }
+  .shutter.good { border-color: var(--o); }
+  .shutter:disabled { opacity: .35; }
+  #thumbBtn { background-size: cover; background-position: center; overflow: visible; }
+  #thumbBtn .badge { position: absolute; top: -4px; right: -4px; min-width: 22px; height: 22px; border-radius: 11px; background: var(--o); font: 700 12px/22px system-ui; text-align: center; padding: 0 5px; }
+  .btn { min-width: 86px; height: 50px; border-radius: 25px; font: 600 16px system-ui; cursor: pointer; }
+  .btn.use { background: var(--o); }
+  .fly { position: fixed; z-index: 30; border-radius: 10px; box-shadow: 0 6px 24px rgba(0,0,0,.5); pointer-events: none; object-fit: cover; }
+
+  #viewer { position: fixed; inset: 0; background: #000; z-index: 40; display: flex; flex-direction: column; }
+  #viewer .bar { display: flex; gap: 8px; padding: 8px; align-items: center; color: #fff; font-size: 13px; }
+  #viewer .bar span { flex: 1; }
+  #viewer .bar button { padding: 8px 16px; border: 0; border-radius: 8px; background: var(--o); color: #fff; font-weight: 600; }
+  #viewer .scroll { flex: 1; overflow: auto; }
+  #viewer img { display: block; max-width: none; }
+</style>
+</head>
+<body>
+
+<!-- ================= Home: open camera, results, log ================= -->
+<header>TransLog camera test <span class="ver">v3</span><small>27 Nov 2026</small></header>
+<main>
+  <div id="secure"></div>
+  <div id="notice"></div>
+  <button class="open" id="openBtn">Open camera</button>
+  <p class="intro">Full screen camera with live coaching, tap to focus and a level. Take the same slip with <b>A Still</b>, <b>B Frame</b> and <b>C Phone</b> (switch at the top). Tap the thumbnail bottom-left or ✕ to come back here. "View 1600" shows what the AI gets at full size.</p>
+  <h2>Results</h2>
+  <div id="results"></div>
+  <h2>Log</h2>
+  <textarea id="log" readonly></textarea>
+  <button class="copy" id="copyBtn">Copy log</button>
+</main>
+
+<!-- ================= Camera ================= -->
+<div class="cam" id="cam" hidden>
+  <video id="video" playsinline muted></video>
+  <canvas id="review" hidden></canvas>
+  <canvas id="fx"></canvas>
+  <div id="tap"></div>
+  <div id="flash"></div>
+
+  <div class="top" id="liveTop">
+    <button class="round sm glass" id="closeBtn" aria-label="Close">✕</button>
+    <div class="seg glass"><button id="modeA" class="on">A Still</button><button id="modeB">B Frame</button></div>
+    <span class="sp"></span>
+    <label class="pill glass">C<input id="nativeInput" type="file" accept="image/*" capture="environment"></label>
+    <label class="pill glass">Gallery<input id="galleryInput" type="file" accept="image/*"></label>
+  </div>
+  <div class="coach glass" id="coach">Starting…</div>
+  <div class="debug" id="debug"></div>
+
+  <div class="bottom" id="liveBottom">
+    <button class="round glass" id="thumbBtn" aria-label="Results"><svg viewBox="0 0 24 24"><path d="M4 5h16a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2zm0 2v8.6l4.3-4.3 3.2 3.2 2.5-2.5L20 17V7H4z"/></svg><span class="badge" id="badge" hidden>0</span></button>
+    <button class="shutter" id="shutter" disabled aria-label="Take photo"></button>
+    <button class="round glass" id="torchBtn" disabled aria-label="Torch"><svg viewBox="0 0 24 24"><path d="M13 2 4 14h6l-1 8 9-12h-6l1-8z"/></svg></button>
+  </div>
+
+  <div class="bottom" id="reviewBottom" hidden>
+    <button class="round glass" id="rotL" aria-label="Rotate left">⟲</button>
+    <button class="btn glass" id="retake">Retake</button>
+    <button class="btn glass use" id="use">Use</button>
+    <button class="round glass" id="rotR" aria-label="Rotate right">⟳</button>
+  </div>
+</div>
+
+<div id="viewer" hidden>
+  <div class="bar"><span id="viewerInfo"></span><button id="viewerClose">Close</button></div>
+  <div class="scroll" id="viewerScroll"><img id="viewerImg" alt=""></div>
+</div>
+
+<script>
+'use strict';
+const VERSION = 'v3';
+const MAX_EDGE = 1600, QUALITY = 0.8, THUMB_EDGE = 320, REVIEW_EDGE = 1200;
+// Live coaching thresholds (tuned from the numbers in the debug line and the log).
+const MOTION_T = 7, DARK_T = 55, GLARE_T = 0.06, SHARP_T = 25;
+
+const $ = id => document.getElementById(id);
+const video = $('video'), fx = $('fx'), fxg = fx.getContext('2d');
+let stream = null, track = null, caps = {}, imageCapture = null, photoCaps = null;
+let mode = 'A', torchOn = false, resumeOnShow = false, lastFix = null, count = 0, busy = false;
+let pending = null;          // photo in review: { method, blob, bmp, ms, fix, rot, live }
+let live = { m: 0, b: 0, g: 0, s: 0, state: '' }, goodStreak = 0, isGood = false;
+let grav = null;             // latest gravity vector from the motion sensor
+let focusRing = null;        // { x, y, t }
+let focusLogged = false;
+const lines = [];
+
+function log(s) { lines.push(s); $('log').value = lines.join('\n'); }
+function kb(b) { return b >= 1048576 ? (b / 1048576).toFixed(2) + ' MB' : Math.round(b / 1024) + ' KB'; }
+function toBlob(c, type, q) { return new Promise(r => c.toBlob(r, type, q)); }
+function buzz(ms) { try { navigator.vibrate && navigator.vibrate(ms); } catch (e) {} }
+
+// ---------- Environment ----------
+log('TransLog camera test ' + VERSION + ' · ' + new Date().toISOString());
+log('Browser: ' + navigator.userAgent);
+log('Screen ' + screen.width + 'x' + screen.height + ' @' + devicePixelRatio + 'x · secure ' + window.isSecureContext +
+    ' · ImageCapture ' + ('ImageCapture' in window) + ' · fullscreen ' + !!document.documentElement.requestFullscreen +
+    ' · vibrate ' + !!navigator.vibrate);
+if (!window.isSecureContext) {
+  $('secure').innerHTML = '<div class="warn">Not opened over HTTPS: Chrome blocks the in-page camera, location and the motion sensor. Open it from an https:// address.</div>';
+}
+try {
+  const opened = sessionStorage.getItem('tl-native-open');
+  if (opened) {
+    const secs = Math.round((Date.now() - Number(opened)) / 1000);
+    $('notice').innerHTML = '<div class="note">The page reloaded while the phone camera was open (' + secs + ' s). The photo was lost.</div>';
+    log('!! Page reloaded while the phone camera app was open (' + secs + ' s). Photo lost.');
+    sessionStorage.removeItem('tl-native-open');
+  }
+} catch (e) {}
+
+// ---------- Location ----------
+if ('geolocation' in navigator) {
+  navigator.geolocation.watchPosition(p => {
+    lastFix = { lat: p.coords.latitude, lng: p.coords.longitude, acc: p.coords.accuracy, time: p.timestamp };
+  }, e => log('Location error ' + e.code + ': ' + e.message),
+  { enableHighAccuracy: true, maximumAge: 30000, timeout: 20000 });
+}
+function fixText(f) {
+  if (!f) return 'no location';
+  return '±' + Math.round(f.acc) + ' m, ' + Math.round((Date.now() - f.time) / 1000) + ' s old (' + f.lat.toFixed(5) + ', ' + f.lng.toFixed(5) + ')';
+}
+
+// ---------- Motion sensor (level) ----------
+let motionLogged = false;
+function onMotion(e) {
+  const a = e.accelerationIncludingGravity;
+  if (!a || a.x == null) return;
+  grav = grav ? { x: grav.x * 0.8 + a.x * 0.2, y: grav.y * 0.8 + a.y * 0.2, z: grav.z * 0.8 + a.z * 0.2 } : { x: a.x, y: a.y, z: a.z };
+  if (!motionLogged) { motionLogged = true; log('Motion sensor: x ' + a.x.toFixed(1) + ' y ' + a.y.toFixed(1) + ' z ' + a.z.toFixed(1)); }
+}
+async function startMotion() {
+  try {
+    if (typeof DeviceMotionEvent !== 'undefined' && DeviceMotionEvent.requestPermission) {
+      const r = await DeviceMotionEvent.requestPermission();
+      if (r !== 'granted') { log('Motion sensor: ' + r); return; }
+    }
+    window.addEventListener('devicemotion', onMotion);
+  } catch (e) { log('Motion sensor failed: ' + e.message); }
+}
+
+// ---------- Open and close the camera screen ----------
+$('openBtn').onclick = async () => {
+  $('cam').hidden = false;
+  document.body.classList.add('cam-open');
+  enterFullscreen();
+  startMotion();
+  resize();
+  await startCamera();
+};
+function enterFullscreen() {
+  const el = document.documentElement;
+  if (document.fullscreenElement || !el.requestFullscreen) return;
+  el.requestFullscreen({ navigationUI: 'hide' })
+    .then(() => screen.orientation && screen.orientation.lock ? screen.orientation.lock('portrait').catch(e => log('Portrait lock: ' + e.name)) : null)
+    .catch(e => log('Fullscreen refused: ' + e.name));
+}
+function closeCamera() {
+  stopCamera();
+  if (pending) backToCamera();
+  $('cam').hidden = true;
+  document.body.classList.remove('cam-open');
+  if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
+  window.removeEventListener('devicemotion', onMotion);
+}
+$('closeBtn').onclick = closeCamera;
+$('thumbBtn').onclick = closeCamera;
+
+// ---------- Camera ----------
+async function startCamera() {
+  stopCamera();
+  $('coach').textContent = 'Starting camera…';
+  try {
+    stream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: { ideal: 'environment' }, width: { ideal: 4096 }, height: { ideal: 2160 } },
+      audio: false
+    });
+  } catch (e) {
+    log('Camera failed: ' + e.name + ' – ' + e.message);
+    closeCamera();
+    $('notice').innerHTML = '<div class="warn">' + (e.name === 'NotAllowedError'
+      ? 'The camera is blocked for this site. Tap the icon left of the address, then Permissions › Camera › Allow, and reload.'
+      : 'The camera could not start (' + e.name + ').') + '</div>';
+    return;
+  }
+  track = stream.getVideoTracks()[0];
+  video.srcObject = stream;
+  await video.play().catch(() => {});
+  const s = track.getSettings ? track.getSettings() : {};
+  caps = track.getCapabilities ? track.getCapabilities() : {};
+  log('Camera: ' + track.label);
+  log('  stream ' + s.width + 'x' + s.height + ' @' + Math.round(s.frameRate || 0) + ' fps, focus ' + (s.focusMode || '-') +
+      ' | max ' + (caps.width ? caps.width.max + 'x' + caps.height.max : '?') +
+      ' | torch ' + !!caps.torch + ' | focus modes ' + ((caps.focusMode || []).join('/') || '-'));
+  $('torchBtn').disabled = !caps.torch;
+  torchOn = false; $('torchBtn').classList.remove('on');
+  imageCapture = null; photoCaps = null;
+  if ('ImageCapture' in window) {
+    imageCapture = new ImageCapture(track);
+    try {
+      photoCaps = await imageCapture.getPhotoCapabilities();
+      log('  full still max ' + photoCaps.imageWidth.max + 'x' + photoCaps.imageHeight.max);
+    } catch (e) { log('  getPhotoCapabilities failed: ' + e.message); }
+  }
+  goodStreak = 0; isGood = false;
+  $('shutter').disabled = false;
+}
+function stopCamera() {
+  if (stream) stream.getTracks().forEach(t => t.stop());
+  stream = null; track = null; imageCapture = null;
+  video.srcObject = null;
+  $('shutter').disabled = true; $('torchBtn').disabled = true;
+}
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) {
+    if (stream) { resumeOnShow = true; stopCamera(); log('Page hidden: camera off'); }
+  } else if (resumeOnShow && !$('cam').hidden) {
+    resumeOnShow = false; log('Page visible: camera on'); startCamera();
+  }
+});
+
+$('modeA').onclick = () => { mode = 'A'; $('modeA').classList.add('on'); $('modeB').classList.remove('on'); };
+$('modeB').onclick = () => { mode = 'B'; $('modeB').classList.add('on'); $('modeA').classList.remove('on'); };
+$('torchBtn').onclick = async () => {
+  if (!track) return;
+  try {
+    await track.applyConstraints({ advanced: [{ torch: !torchOn }] });
+    torchOn = !torchOn; $('torchBtn').classList.toggle('on', torchOn);
+  } catch (e) { log('Torch failed: ' + e.message); }
+};
+
+// ---------- Geometry: guide frame on screen and in the video ----------
+function guideRect() {
+  const w = innerWidth, h = innerHeight;
+  const x = w * 0.07, y = h * 0.15, gw = w * 0.86, gh = h * 0.62;
+  return { x, y, w: gw, h: gh };
+}
+// Maps a point on screen to the video's own pixels (the video is shown with object-fit: cover).
+function screenToVideo(px, py) {
+  const vw = video.videoWidth, vh = video.videoHeight;
+  const sc = Math.max(innerWidth / vw, innerHeight / vh);
+  const ox = (innerWidth - vw * sc) / 2, oy = (innerHeight - vh * sc) / 2;
+  return { x: (px - ox) / sc, y: (py - oy) / sc, vw, vh };
+}
+
+// ---------- Live coaching: 4 times a second, look at a small copy of the guide area ----------
+const an = document.createElement('canvas'), ag = an.getContext('2d', { willReadFrequently: true });
+let prevGray = null;
+function analyse() {
+  if (!track || pending || !video.videoWidth) return;
+  const r = guideRect(), a = screenToVideo(r.x, r.y), b = screenToVideo(r.x + r.w, r.y + r.h);
+  const sx = Math.max(0, a.x), sy = Math.max(0, a.y), sw = Math.min(a.vw, b.x) - sx, sh = Math.min(a.vh, b.y) - sy;
+  if (sw <= 0 || sh <= 0) return;
+  const W = 160, H = Math.max(8, Math.round(W * sh / sw));
+  an.width = W; an.height = H;
+  ag.drawImage(video, sx, sy, sw, sh, 0, 0, W, H);
+  const d = ag.getImageData(0, 0, W, H).data, n = W * H, g = new Float32Array(n);
+  let sum = 0, hot = 0;
+  for (let i = 0; i < n; i++) { const v = 0.299 * d[i * 4] + 0.587 * d[i * 4 + 1] + 0.114 * d[i * 4 + 2]; g[i] = v; sum += v; if (v > 250) hot++; }
+  let ls = 0, ls2 = 0, ln = 0;
+  for (let y = 1; y < H - 1; y++) for (let x = 1; x < W - 1; x++) {
+    const i = y * W + x, l = g[i - W] + g[i + W] + g[i - 1] + g[i + 1] - 4 * g[i];
+    ls += l; ls2 += l * l; ln++;
+  }
+  let motion = 0;
+  if (prevGray && prevGray.length === n) { let t = 0; for (let i = 0; i < n; i++) t += Math.abs(g[i] - prevGray[i]); motion = t / n; }
+  prevGray = g;
+  const mean = ls / ln;
+  live = { m: motion, b: sum / n, g: hot / n, s: ls2 / ln - mean * mean };
+
+  let state;
+  if (live.m > MOTION_T) state = 'move';
+  else if (live.b < DARK_T) state = 'dark';
+  else if (live.g > GLARE_T) state = 'glare';
+  else if (live.s < SHARP_T) state = 'blur';
+  else state = 'good';
+  live.state = state;
+  goodStreak = state === 'good' ? goodStreak + 1 : 0;
+  const nowGood = goodStreak >= 3;
+  if (nowGood && !isGood) buzz(12);
+  isGood = nowGood;
+
+  const text = {
+    move: 'Hold still',
+    dark: caps.torch && !torchOn ? 'Too dark – tap the torch' : 'Too dark – find more light',
+    glare: 'Glare – tilt the phone a little',
+    blur: 'Move closer or tap to focus',
+    good: isGood ? 'Good – take the photo' : 'Hold still'
+  }[state];
+  $('coach').textContent = text;
+  $('coach').classList.toggle('good', isGood);
+  $('shutter').classList.toggle('good', isGood);
+  $('debug').textContent = 'move ' + live.m.toFixed(1) + ' · light ' + Math.round(live.b) + ' · glare ' + (live.g * 100).toFixed(1) +
+    '% · sharp ' + Math.round(live.s) + (lastFix ? ' · GPS ±' + Math.round(lastFix.acc) + ' m' : ' · no GPS') + (grav ? ' · tilt ' + tiltText() : '');
+}
+setInterval(analyse, 250);
+
+// ---------- Overlay drawing: dimmed edges, corner brackets, focus ring, level ----------
+function resize() {
+  const dpr = devicePixelRatio || 1;
+  fx.width = Math.round(innerWidth * dpr); fx.height = Math.round(innerHeight * dpr);
+  fxg.setTransform(dpr, 0, 0, dpr, 0, 0);
+}
+addEventListener('resize', resize);
+
+function draw(t) {
+  requestAnimationFrame(draw);
+  if ($('cam').hidden) return;
+  const w = innerWidth, h = innerHeight;
+  fxg.clearRect(0, 0, w, h);
+  if (pending || !track) return;
+  const r = guideRect(), rad = 18;
+
+  // Dim everything outside the guide.
+  fxg.save();
+  fxg.beginPath();
+  fxg.rect(0, 0, w, h);
+  fxg.roundRect(r.x, r.y, r.w, r.h, rad);
+  fxg.fillStyle = 'rgba(0,0,0,.28)';
+  fxg.fill('evenodd');
+  fxg.restore();
+
+  // Corner brackets: breathe while waiting, glow orange when the picture is good.
+  const pulse = isGood ? 0 : Math.sin(t / 280) * 3;
+  const x0 = r.x - pulse, y0 = r.y - pulse, x1 = r.x + r.w + pulse, y1 = r.y + r.h + pulse;
+  const L = Math.min(r.w, r.h) * 0.14;
+  fxg.save();
+  fxg.lineWidth = 5; fxg.lineCap = 'round'; fxg.lineJoin = 'round';
+  fxg.strokeStyle = isGood ? '#F97316' : 'rgba(255,255,255,.95)';
+  fxg.shadowColor = isGood ? '#F97316' : 'rgba(0,0,0,.6)';
+  fxg.shadowBlur = isGood ? 16 + Math.sin(t / 200) * 4 : 4;
+  fxg.beginPath();
+  fxg.moveTo(x0, y0 + L); fxg.arcTo(x0, y0, x0 + L, y0, rad); fxg.lineTo(x0 + L, y0);
+  fxg.moveTo(x1 - L, y0); fxg.arcTo(x1, y0, x1, y0 + L, rad); fxg.lineTo(x1, y0 + L);
+  fxg.moveTo(x1, y1 - L); fxg.arcTo(x1, y1, x1 - L, y1, rad); fxg.lineTo(x1 - L, y1);
+  fxg.moveTo(x0 + L, y1); fxg.arcTo(x0, y1, x0, y1 - L, rad); fxg.lineTo(x0, y1 - L);
+  fxg.stroke();
+  fxg.restore();
+
+  // Focus ring: shrinks in, then fades.
+  if (focusRing) {
+    const age = t - focusRing.t;
+    if (age > 1500) focusRing = null;
+    else {
+      const k = Math.min(1, age / 250), rr = 60 - 22 * k, alpha = age < 1000 ? 1 : 1 - (age - 1000) / 500;
+      fxg.save();
+      fxg.globalAlpha = alpha; fxg.strokeStyle = '#F97316'; fxg.lineWidth = 3;
+      fxg.beginPath(); fxg.arc(focusRing.x, focusRing.y, rr, 0, Math.PI * 2); fxg.stroke();
+      fxg.beginPath(); fxg.arc(focusRing.x, focusRing.y, 3, 0, Math.PI * 2); fxg.fillStyle = '#F97316'; fxg.fill();
+      fxg.restore();
+    }
+  }
+
+  drawLevel(r.x + r.w / 2, r.y + r.h - 46);
+}
+requestAnimationFrame(draw);
+
+// Flat (pointing down at a slip on a seat): bubble level. Upright: a horizon line.
+function isFlat() { return grav && Math.abs(grav.z) > 7.5; }
+function tiltText() {
+  if (!grav) return '';
+  if (isFlat()) return Math.round(Math.atan2(Math.hypot(grav.x, grav.y), Math.abs(grav.z)) * 180 / Math.PI) + '° flat';
+  return Math.round(Math.atan2(grav.x, grav.y) * 180 / Math.PI) + '° roll';
+}
+function drawLevel(cx, cy) {
+  if (!grav) return;
+  fxg.save();
+  fxg.shadowColor = 'rgba(0,0,0,.6)'; fxg.shadowBlur = 4;
+  if (isFlat()) {
+    const tilt = Math.atan2(Math.hypot(grav.x, grav.y), Math.abs(grav.z)) * 180 / Math.PI;
+    const ok = tilt < 3, R = 26, k = 4;
+    let dx = grav.x * k, dy = -grav.y * k;
+    const len = Math.hypot(dx, dy); if (len > R - 6) { dx *= (R - 6) / len; dy *= (R - 6) / len; }
+    fxg.strokeStyle = ok ? '#22c55e' : 'rgba(255,255,255,.9)'; fxg.lineWidth = 2;
+    fxg.beginPath(); fxg.arc(cx, cy, R, 0, Math.PI * 2); fxg.stroke();
+    fxg.beginPath(); fxg.arc(cx, cy, 7, 0, Math.PI * 2); fxg.stroke();
+    fxg.fillStyle = ok ? '#22c55e' : '#F97316';
+    fxg.beginPath(); fxg.arc(cx + dx, cy + dy, 6, 0, Math.PI * 2); fxg.fill();
+  } else {
+    const ang = Math.atan2(grav.x, grav.y), deg = ang * 180 / Math.PI, ok = Math.abs(deg) < 2, half = 60;
+    fxg.strokeStyle = 'rgba(255,255,255,.6)'; fxg.lineWidth = 2;
+    fxg.beginPath(); fxg.moveTo(cx - half - 14, cy); fxg.lineTo(cx - half - 4, cy); fxg.moveTo(cx + half + 4, cy); fxg.lineTo(cx + half + 14, cy); fxg.stroke();
+    fxg.save(); fxg.translate(cx, cy); fxg.rotate(ang);
+    fxg.strokeStyle = ok ? '#22c55e' : '#F97316'; fxg.lineWidth = 3;
+    fxg.beginPath(); fxg.moveTo(-half, 0); fxg.lineTo(half, 0); fxg.stroke();
+    fxg.restore();
+  }
+  fxg.restore();
+}
+
+// ---------- Tap to focus ----------
+$('tap').addEventListener('click', async e => {
+  if (!track || pending) return;
+  focusRing = { x: e.clientX, y: e.clientY, t: performance.now() };
+  const v = screenToVideo(e.clientX, e.clientY);
+  const pt = { x: Math.min(1, Math.max(0, v.x / v.vw)), y: Math.min(1, Math.max(0, v.y / v.vh)) };
+  const modes = caps.focusMode || [];
+  const c = { pointsOfInterest: [pt] };
+  if (modes.includes('single-shot')) c.focusMode = 'single-shot';
+  else if (modes.includes('continuous')) c.focusMode = 'continuous';
+  try {
+    await track.applyConstraints({ advanced: [c] });
+    if (!focusLogged) { focusLogged = true; log('Tap to focus: sent (' + (c.focusMode || 'no focus mode') + ')'); }
+    if (c.focusMode === 'single-shot' && modes.includes('continuous')) {
+      setTimeout(() => track && track.applyConstraints({ advanced: [{ focusMode: 'continuous' }] }).catch(() => {}), 4000);
+    }
+  } catch (err) {
+    if (!focusLogged) { focusLogged = true; log('Tap to focus not supported: ' + err.name); }
+  }
+});
+
+// ---------- Shutter ----------
+function flash() { $('flash').animate([{ opacity: 0.9 }, { opacity: 0 }], { duration: 280, easing: 'ease-out' }); }
+$('shutter').onclick = async () => {
+  if (!track || busy) return;
+  busy = true; $('shutter').disabled = true;
+  const fix = lastFix, t0 = performance.now(), liveAtShot = Object.assign({}, live);
+  buzz(30); flash();
+  try {
+    let blob, method;
+    if (mode === 'A' && imageCapture) {
+      const s = {};
+      if (photoCaps && photoCaps.imageWidth) { s.imageWidth = photoCaps.imageWidth.max; s.imageHeight = photoCaps.imageHeight.max; }
+      blob = await imageCapture.takePhoto(s); method = 'A. Full still';
+    } else {
+      const c = document.createElement('canvas');
+      c.width = video.videoWidth; c.height = video.videoHeight;
+      c.getContext('2d').drawImage(video, 0, 0);
+      blob = await toBlob(c, 'image/jpeg', 0.95); method = 'B. Video frame';
+    }
+    await review(method, blob, performance.now() - t0, fix, liveAtShot);
+  } catch (e) {
+    $('coach').textContent = 'Photo failed: ' + e.name;
+    log('Shutter (' + mode + ') failed: ' + e.name + ' – ' + e.message);
+  }
+  if (track && track.readyState !== 'live') { log('Stream stopped after the photo; restarting'); startCamera(); }
+  busy = false; if (track) $('shutter').disabled = false;
+};
+
+// ---------- Phone camera and gallery go to the same review screen ----------
+function fileInput(input, method, markOpen) {
+  input.addEventListener('click', () => { if (markOpen) try { sessionStorage.setItem('tl-native-open', String(Date.now())); } catch (e) {} });
+  input.addEventListener('cancel', () => { try { sessionStorage.removeItem('tl-native-open'); } catch (e) {} });
+  input.addEventListener('change', async () => {
+    try { sessionStorage.removeItem('tl-native-open'); } catch (e) {}
+    const f = input.files && input.files[0];
+    input.value = '';
+    if (f) await review(method, f, null, lastFix, null);
+  });
+}
+fileInput($('nativeInput'), 'C. Phone camera', true);
+fileInput($('galleryInput'), 'D. Gallery', false);
+
+// ---------- Review: rotate, retake, use ----------
+async function review(method, blob, ms, fix, liveAtShot) {
+  let bmp;
+  try { bmp = await createImageBitmap(blob, { imageOrientation: 'from-image' }); }
+  catch (e) { $('coach').textContent = 'Could not read the photo'; log(method + ': could not decode (' + (blob.type || '?') + ') ' + e.message); return; }
+  pending = { method, blob, bmp, ms, fix, rot: 0, live: liveAtShot };
+  drawReview();
+  $('review').hidden = false; video.hidden = true;
+  $('liveTop').hidden = true; $('liveBottom').hidden = true; $('coach').hidden = true; $('debug').hidden = true;
+  $('reviewBottom').hidden = false;
+}
+function drawReview() {
+  const c = drawScaled(pending.bmp, REVIEW_EDGE, pending.rot), rc = $('review');
+  rc.width = c.width; rc.height = c.height;
+  rc.getContext('2d').drawImage(c, 0, 0);
+}
+function backToCamera() {
+  if (pending && pending.bmp.close) pending.bmp.close();
+  pending = null;
+  $('review').hidden = true; video.hidden = false;
+  $('liveTop').hidden = false; $('liveBottom').hidden = false; $('coach').hidden = false; $('debug').hidden = false;
+  $('reviewBottom').hidden = true;
+  goodStreak = 0; isGood = false;
+}
+$('rotL').onclick = () => { if (pending) { pending.rot = (pending.rot + 270) % 360; drawReview(); } };
+$('rotR').onclick = () => { if (pending) { pending.rot = (pending.rot + 90) % 360; drawReview(); } };
+$('retake').onclick = () => { if (pending) log('Retake (' + pending.method + ')'); enterFullscreen(); backToCamera(); };
+$('use').onclick = async () => {
+  if (!pending) return;
+  enterFullscreen();
+  const p = pending;
+  $('use').disabled = true;
+  const thumbUrl = await keep(p);
+  $('use').disabled = false;
+  flyToThumb(thumbUrl);
+  backToCamera();
+};
+
+// The kept photo shrinks into the thumbnail button bottom-left.
+function flyToThumb(url) {
+  const from = $('review').getBoundingClientRect(), to = $('thumbBtn').getBoundingClientRect();
+  const img = document.createElement('img');
+  img.src = url; img.className = 'fly';
+  const w = Math.min(from.width * 0.7, 360), h = w * 4 / 3;
+  Object.assign(img.style, { left: (innerWidth - w) / 2 + 'px', top: (innerHeight - h) / 2 + 'px', width: w + 'px', height: h + 'px' });
+  document.body.appendChild(img);
+  const dx = to.left + to.width / 2 - innerWidth / 2, dy = to.top + to.height / 2 - innerHeight / 2, s = to.width / w;
+  img.animate([
+    { transform: 'translate(0,0) scale(1)', opacity: 1, borderRadius: '10px' },
+    { transform: 'translate(' + dx + 'px,' + dy + 'px) scale(' + s + ')', opacity: 0.9, borderRadius: '50%' }
+  ], { duration: 450, easing: 'cubic-bezier(.5,0,.3,1)' }).onfinish = () => {
+    img.remove();
+    const tb = $('thumbBtn');
+    tb.style.backgroundImage = 'url(' + url + ')';
+    tb.querySelector('svg').style.display = 'none';
+    $('badge').hidden = false; $('badge').textContent = count;
+    tb.animate([{ transform: 'scale(1.25)' }, { transform: 'scale(1)' }], { duration: 250 });
+    buzz(15);
+  };
+}
+
+// ---------- Compress, measure, list ----------
+async function keep(p) {
+  const { method, blob, bmp, ms, fix, rot } = p;
+  const W = bmp.width, H = bmp.height, t1 = performance.now();
+  const main = drawScaled(bmp, MAX_EDGE, rot);
+  let sent = await toBlob(main, 'image/jpeg', QUALITY), kept = false, sentW = main.width, sentH = main.height;
+  if (rot === 0 && blob.type === 'image/jpeg' && blob.size <= sent.size && Math.max(W, H) <= MAX_EDGE * 1.5) {
+    sent = blob; kept = true; sentW = W; sentH = H;
+  }
+  const thumb = await toBlob(drawScaled(bmp, THUMB_EDGE, rot), 'image/jpeg', 0.7);
+  const compressMs = performance.now() - t1, sharp = sharpness(main), n = ++count;
+  const lv = p.live ? ' | live at shot: move ' + p.live.m.toFixed(1) + ' light ' + Math.round(p.live.b) + ' glare ' + (p.live.g * 100).toFixed(1) +
+    '% sharp ' + Math.round(p.live.s) + ' (' + p.live.state + ')' : '';
+  log('#' + n + ' ' + method +
+    ' | source ' + W + 'x' + H + ' ' + kb(blob.size) + ' ' + (blob.type || '?') + (ms != null ? ', took ' + Math.round(ms) + ' ms' : '') +
+    ' | rotated ' + rot + '° | sent ' + sentW + 'x' + sentH + ' ' + kb(sent.size) + (kept ? ' (original kept)' : ' (compressed ' + Math.round(compressMs) + ' ms)') +
+    ' | thumb ' + kb(thumb.size) + ' | sharp ' + sharp + lv + ' | ' + fixText(fix) + (grav ? ' | tilt ' + tiltText() : ''));
+
+  const sentUrl = URL.createObjectURL(sent), srcUrl = URL.createObjectURL(blob), thumbUrl = URL.createObjectURL(thumb);
+  const card = document.createElement('div');
+  card.className = 'card';
+  card.innerHTML = '<img alt=""><div class="t"><b>#' + n + ' ' + method + '</b><br>' +
+    'Source: ' + W + '×' + H + ', ' + kb(blob.size) + (ms != null ? ', ' + Math.round(ms) + ' ms' : '') + '<br>' +
+    'Sent: ' + sentW + '×' + sentH + ', ' + kb(sent.size) + (kept ? ' (original kept)' : '') + (rot ? ', rotated ' + rot + '°' : '') + '<br>' +
+    'Thumb: ' + kb(thumb.size) + ' · Sharp: <b>' + sharp + '</b><br>Location: ' + fixText(fix) +
+    '<div class="row"><button data-v="sent">View 1600</button><button data-v="src">View source</button></div></div>';
+  card.querySelector('img').src = thumbUrl;
+  card.querySelector('[data-v=sent]').onclick = () => view(sentUrl, '#' + n + ' ' + method + ' · sent ' + sentW + '×' + sentH);
+  card.querySelector('[data-v=src]').onclick = () => view(srcUrl, '#' + n + ' ' + method + ' · source (not rotated) ' + W + '×' + H);
+  $('results').prepend(card);
+  return thumbUrl;
+}
+
+// Scales so the longest side is at most `edge`, turned clockwise by `rot` degrees.
+function drawScaled(bmp, edge, rot) {
+  const scale = Math.min(1, edge / Math.max(bmp.width, bmp.height));
+  const w = Math.round(bmp.width * scale), h = Math.round(bmp.height * scale), turned = rot === 90 || rot === 270;
+  const c = document.createElement('canvas');
+  c.width = turned ? h : w; c.height = turned ? w : h;
+  const g = c.getContext('2d');
+  g.imageSmoothingQuality = 'high';
+  g.translate(c.width / 2, c.height / 2);
+  g.rotate(rot * Math.PI / 180);
+  g.drawImage(bmp, -w / 2, -h / 2, w, h);
+  return c;
+}
+
+// Variance of the Laplacian on the centre 400×400 of the 1600 image.
+function sharpness(canvas) {
+  const s = Math.min(400, canvas.width, canvas.height);
+  const x0 = Math.floor((canvas.width - s) / 2), y0 = Math.floor((canvas.height - s) / 2);
+  const d = canvas.getContext('2d').getImageData(x0, y0, s, s).data, g = new Float32Array(s * s);
+  for (let i = 0; i < s * s; i++) g[i] = 0.299 * d[i * 4] + 0.587 * d[i * 4 + 1] + 0.114 * d[i * 4 + 2];
+  let sum = 0, sum2 = 0, n = 0;
+  for (let y = 1; y < s - 1; y++) for (let x = 1; x < s - 1; x++) {
+    const i = y * s + x, l = g[i - s] + g[i + s] + g[i - 1] + g[i + 1] - 4 * g[i];
+    sum += l; sum2 += l * l; n++;
+  }
+  const mean = sum / n;
+  return Math.round(sum2 / n - mean * mean);
+}
+
+// ---------- Full-size viewer ----------
+function view(url, info) {
+  const img = $('viewerImg'), sc = $('viewerScroll');
+  $('viewerInfo').textContent = info + ' · 100%';
+  $('viewer').hidden = false;
+  img.onload = () => { sc.scrollLeft = (img.naturalWidth - sc.clientWidth) / 2; sc.scrollTop = (img.naturalHeight - sc.clientHeight) / 2; };
+  img.src = url;
+}
+$('viewerClose').onclick = () => { $('viewer').hidden = true; $('viewerImg').removeAttribute('src'); };
+
+$('copyBtn').onclick = async () => {
+  const t = $('log');
+  try { await navigator.clipboard.writeText(t.value); } catch (e) { t.select(); document.execCommand('copy'); }
+  $('copyBtn').textContent = 'Copied';
+  setTimeout(() => $('copyBtn').textContent = 'Copy log', 1500);
+};
+</script>
+</body>
+</html>
