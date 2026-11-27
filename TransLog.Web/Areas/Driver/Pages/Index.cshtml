@@ -4,6 +4,7 @@
     ViewData["Title"] = "Driver";
 }
 
+@Html.AntiForgeryToken()
 <section class="tl-section pt-4">
     <div class="container" style="max-width: 560px">
         <p class="tl-eyebrow mb-1">@Model.CompanyName</p>
@@ -17,10 +18,10 @@
         }
 
         <div class="d-grid gap-3">
-            <div class="tl-card tl-bigbtn text-body-secondary" aria-disabled="true">
+            <a class="tl-card tl-card-link tl-bigbtn" asp-page="/Capture">
                 @Icons.Svg("camera")
-                <span>Photograph a slip<span class="d-block small fw-normal">Coming in Part 4</span></span>
-            </div>
+                <span>Photograph a slip<span class="d-block small fw-normal text-body-secondary">Fuel, weighbridge, odometer or receipt</span></span>
+            </a>
             <a class="tl-card tl-card-link tl-bigbtn" asp-page="/MyVehicle">
                 @Icons.Svg("truck-front")
                 <span>
@@ -30,10 +31,26 @@
                     </span>
                 </span>
             </a>
-            <div class="tl-card tl-bigbtn text-body-secondary" aria-disabled="true">
+            <a class="tl-card tl-card-link tl-bigbtn" asp-page="/Slips">
                 @Icons.Svg("images")
-                <span>My slips<span class="d-block small fw-normal">Coming in Part 5</span></span>
-            </div>
+                <span>My slips<span class="d-block small fw-normal text-body-secondary" id="waitingText">Photos you sent</span></span>
+            </a>
         </div>
     </div>
 </section>
+
+@section Scripts {
+    @* Photos still on the phone are sent as soon as the driver opens the app. *@
+    <script src="~/resources/page-capture-queue.js" asp-append-version="true"></script>
+    <script>
+        (function () {
+            var text = document.getElementById('waitingText');
+            window.addEventListener('tlqueue', function (e) {
+                var n = e.detail.count;
+                text.textContent = n === 0 ? 'Photos you sent' : (n === 1 ? '1 photo waiting to send' : n + ' photos waiting to send');
+                text.classList.toggle('text-warning-emphasis', n > 0);
+            });
+            TLQueue.sendAll();
+        })();
+    </script>
+}

@@ -27,6 +27,10 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, CurrentCompany
 
     public DbSet<DriverVehicleLink> DriverVehicleLinks => Set<DriverVehicleLink>();
 
+    public DbSet<Capture> Captures => Set<Capture>();
+
+    public DbSet<CaptureImage> CaptureImages => Set<CaptureImage>();
+
     protected override void OnModelCreating(ModelBuilder b)
     {
         base.OnModelCreating(b);
@@ -102,6 +106,44 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, CurrentCompany
             e.HasIndex(l => new { l.CompanyId, l.DriverId, l.LinkedAt });
         });
 
+        // ---- Captures (Part 4a) ----
+        // A capture can only point at a vehicle and a driver of its own company (composite keys, like the links).
+        b.Entity<Capture>(e =>
+        {
+            e.HasOne<Company>().WithMany().HasForeignKey(c => c.CompanyId).OnDelete(DeleteBehavior.Restrict);
+            e.HasAlternateKey(c => new { c.CompanyId, c.Id });
+            e.HasOne(c => c.Vehicle)
+                .WithMany()
+                .HasForeignKey(c => new { c.CompanyId, c.VehicleId })
+                .HasPrincipalKey(v => new { v.CompanyId, v.Id })
+                .IsRequired(false)
+                .OnDelete(DeleteBehavior.Restrict);
+            e.HasOne(c => c.Driver)
+                .WithMany()
+                .HasForeignKey(c => new { c.CompanyId, c.DriverId })
+                .HasPrincipalKey(d => new { d.CompanyId, d.Id })
+                .IsRequired(false)
+                .OnDelete(DeleteBehavior.Restrict);
+            e.HasOne<AppUser>().WithMany().HasForeignKey(c => c.CapturedByUserId).OnDelete(DeleteBehavior.Restrict);
+            e.HasIndex(c => new { c.CompanyId, c.ClientKey }).IsUnique();
+            e.HasIndex(c => new { c.CompanyId, c.CapturedAt });
+            e.HasIndex(c => new { c.CompanyId, c.DriverId, c.CapturedAt });
+            e.HasIndex(c => new { c.CompanyId, c.VehicleId, c.CapturedAt });
+        });
+
+        b.Entity<CaptureImage>(e =>
+        {
+            e.HasOne(i => i.Capture)
+                .WithMany(c => c.Images)
+                .HasForeignKey(i => new { i.CompanyId, i.CaptureId })
+                .HasPrincipalKey(c => new { c.CompanyId, c.Id })
+                .OnDelete(DeleteBehavior.Restrict);
+            e.Property(i => i.Latitude).HasPrecision(9, 6);
+            e.Property(i => i.Longitude).HasPrecision(9, 6);
+            e.Property(i => i.Sha256).IsFixedLength().IsUnicode(false);
+            e.HasIndex(i => new { i.CompanyId, i.Sha256 });
+        });
+
         // ---- Tenant filter ----
         // Every table that belongs to a company gets one line like this, so a company only ever
         // sees its own rows. System admin pages that must see everything use IgnoreQueryFilters().
@@ -112,6 +154,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, CurrentCompany
         b.Entity<VehicleAlias>().HasQueryFilter(a => a.CompanyId == CurrentCompanyId);
         b.Entity<Driver>().HasQueryFilter(d => d.CompanyId == CurrentCompanyId);
         b.Entity<DriverVehicleLink>().HasQueryFilter(l => l.CompanyId == CurrentCompanyId);
+        b.Entity<Capture>().HasQueryFilter(c => c.CompanyId == CurrentCompanyId);
+        b.Entity<CaptureImage>().HasQueryFilter(i => i.CompanyId == CurrentCompanyId);
     }
 }
 

@@ -75,6 +75,8 @@
                             else if (User.IsInRole(Roles.Driver))
                             {
                                 <li class="nav-item"><a class="nav-link tl-navlink" asp-area="Driver" asp-page="/Index">@Icons.Svg("house") Home</a></li>
+                                <li class="nav-item"><a class="nav-link tl-navlink" asp-area="Driver" asp-page="/Capture">@Icons.Svg("camera") Photograph</a></li>
+                                <li class="nav-item"><a class="nav-link tl-navlink" asp-area="Driver" asp-page="/Slips">@Icons.Svg("images") My slips</a></li>
                                 <li class="nav-item"><a class="nav-link tl-navlink" asp-area="Driver" asp-page="/MyVehicle">@Icons.Svg("truck-front") My vehicle</a></li>
                             }
                             else if (User.GetCompanyId() is not null)

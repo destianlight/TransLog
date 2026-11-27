@@ -24,3 +24,6 @@ uploads/
 # OS
 .DS_Store
 Thumbs.db
+
+# Uploaded photos (Part 4a) live on the server only
+App_Data/

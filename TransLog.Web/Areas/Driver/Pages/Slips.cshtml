@@ -1,0 +1,102 @@
+@page
+@model SlipsModel
+@{
+    ViewData["Title"] = "My slips";
+}
+
+<section class="tl-section pt-4">
+    <div class="container" style="max-width: 720px">
+        @Html.AntiForgeryToken()
+        <div class="d-flex align-items-center gap-2 mb-3">
+            <h1 class="tl-h2 mb-0 me-auto">My slips</h1>
+            <a class="btn btn-tl" asp-page="/Capture">@Icons.Svg("camera") Photograph</a>
+        </div>
+
+        @* Filled by the script below from the photos kept on this phone. *@
+        <div id="waiting" class="tl-card mb-3 p-3" hidden>
+            <div class="d-flex align-items-center gap-2 mb-2">
+                <span class="fw-semibold me-auto">@Icons.Svg("cloud-arrow-up") Waiting to send on this phone</span>
+                <button type="button" class="btn btn-sm btn-tl" id="sendNow">Send now</button>
+            </div>
+            <div id="waitingList" class="d-flex flex-column gap-2"></div>
+        </div>
+
+        @if (Model.Slips.Count == 0)
+        {
+            <div class="tl-card p-3 text-body-secondary">No slips sent yet.</div>
+        }
+        else
+        {
+            <div class="d-flex flex-column gap-2">
+                @foreach (var s in Model.Slips)
+                {
+                    var (text, css) = SlipsModel.StatusLabel(s.Status);
+                    <div class="tl-card p-2 d-flex gap-3 align-items-center">
+                        @if (s.ImageId is int imageId)
+                        {
+                            <a href="/files/capture/@imageId" target="_blank" class="flex-shrink-0">
+                                <img src="/files/capture/@imageId/thumb" alt="Slip photo" width="64" height="85" loading="lazy"
+                                     class="rounded object-fit-cover bg-body-tertiary" />
+                            </a>
+                        }
+                        <div class="small flex-grow-1 min-w-0">
+                            <div class="fw-semibold">@AppCulture.ToSast(s.CapturedAt).ToString("yyyy-MM-dd HH:mm")</div>
+                            <div class="text-body-secondary text-truncate">
+                                @(s.Vehicle ?? "No vehicle")
+                                @if (s.Source == ImageSource.Gallery) { <span> · from gallery</span> }
+                                @if (!s.HasLocation) { <span> · no location</span> }
+                            </div>
+                            <span class="badge @css mt-1">@text</span>
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+    </div>
+</section>
+
+@section Scripts {
+    <script src="~/resources/page-capture-queue.js" asp-append-version="true"></script>
+    <script>
+        (function () {
+            var box = document.getElementById('waiting'), list = document.getElementById('waitingList'), urls = [];
+            function fmt(ms) {
+                var d = new Date(ms), p = function (n) { return String(n).padStart(2, '0'); };
+                return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate()) + ' ' + p(d.getHours()) + ':' + p(d.getMinutes());
+            }
+            function draw(items) {
+                urls.forEach(URL.revokeObjectURL); urls = [];
+                list.textContent = '';
+                box.hidden = items.length === 0;
+                items.forEach(function (item) {
+                    var row = document.createElement('div');
+                    row.className = 'd-flex gap-3 align-items-center small';
+                    var img = document.createElement('img');
+                    var url = URL.createObjectURL(item.thumb || item.photo); urls.push(url);
+                    img.src = url; img.width = 48; img.height = 64; img.alt = '';
+                    img.className = 'rounded object-fit-cover flex-shrink-0';
+                    var text = document.createElement('div');
+                    text.className = 'flex-grow-1';
+                    text.innerHTML = '<div class="fw-semibold"></div><div class="text-body-secondary"></div>';
+                    text.firstChild.textContent = fmt(item.capturedAt);
+                    text.lastChild.textContent = item.failed ? 'Not accepted: ' + item.failed : 'Waiting for signal';
+                    if (item.failed) text.lastChild.className = 'text-danger';
+                    row.appendChild(img); row.appendChild(text);
+                    if (item.failed) {
+                        var del = document.createElement('button');
+                        del.type = 'button'; del.className = 'btn btn-sm btn-outline-danger'; del.textContent = 'Remove';
+                        del.onclick = function () { TLQueue.remove(item.key); };
+                        row.appendChild(del);
+                    }
+                    list.appendChild(row);
+                });
+            }
+            var sentSome = false;
+            window.addEventListener('tlqueue', function (e) { draw(e.detail.items); });
+            document.getElementById('sendNow').onclick = function () {
+                TLQueue.sendAll({ onSent: function () { sentSome = true; } }).then(function () { if (sentSome) location.reload(); });
+            };
+            TLQueue.sendAll({ onSent: function () { sentSome = true; } }).then(function () { if (sentSome) location.reload(); });
+        })();
+    </script>
+}

@@ -14,7 +14,7 @@ namespace TransLog.Web;
 /// </summary>
 public static class Icons
 {
-    public const string Sprite = "/resources/icons.svg?v=3c";
+    public const string Sprite = "/resources/icons.svg?v=4a";
 
     /// <summary>An icon that sits in text: 1em high, takes the text colour, hidden from screen readers.</summary>
     public static IHtmlContent Svg(string name, string css = "bi") =>

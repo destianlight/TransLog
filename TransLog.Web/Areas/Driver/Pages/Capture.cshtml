@@ -1,0 +1,80 @@
+@page
+@model CaptureModel
+@{
+    // Own page, no menu or footer: the camera fills exactly the browser window (Part 4a, from camera test v4).
+    Layout = null;
+}
+<!DOCTYPE html>
+<html lang="en-ZA">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#000000" />
+    <meta name="robots" content="noindex" />
+    <title>Photograph a slip – TransLog</title>
+    <link rel="icon" href="~/favicon.ico" sizes="48x48" />
+    <link rel="icon" href="~/favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="~/resources/page-capture.css" asp-append-version="true" />
+</head>
+<body>
+@Html.AntiForgeryToken()
+
+@if (!Model.HasDriver)
+{
+    <div class="cap-msg">
+        <div class="cap-brand">Trans<b>Log</b></div>
+        <p>Your login is not linked to a driver, or your driver profile is switched off. Ask your company to check your driver details.</p>
+        <a class="cap-go" href="/driver">Back</a>
+    </div>
+}
+else
+{
+    <div class="cam" id="cam" data-home="/driver" data-slips="/driver/slips">
+        <video id="video" playsinline muted></video>
+        <canvas id="review" hidden></canvas>
+        <div id="tap"></div>
+        <div class="guide" id="guide"><i></i><i></i><i></i><i></i></div>
+        <div class="hint glass" id="hint">Fit the slip inside the corners</div>
+        <div id="flash"></div>
+
+        <div class="top" id="liveTop">
+            <a class="round sm glass" href="/driver" aria-label="Close">@Icons.Svg("x-lg", "ic")</a>
+            <span class="pill glass" title="Your vehicle">@Icons.Svg("truck-front", "ic-sm") @(Model.Vehicle ?? "No vehicle")</span>
+            <span class="sp"></span>
+            <button type="button" class="round sm glass" id="switchBtn" hidden aria-label="Switch camera">@Icons.Svg("arrow-repeat", "ic")</button>
+            <label class="round sm glass" aria-label="Phone camera">@Icons.Svg("camera-fill", "ic")<input id="nativeInput" type="file" accept="image/*" capture="environment"></label>
+            <label class="round sm glass" aria-label="Gallery">@Icons.Svg("images", "ic")<input id="galleryInput" type="file" accept="image/*"></label>
+        </div>
+
+        <div class="toast glass" id="toast" hidden></div>
+
+        <div class="bottom" id="liveBottom">
+            <button type="button" class="round glass" id="slipsBtn" aria-label="My slips">@Icons.Svg("images", "ic")<span class="badge" id="badge" hidden>0</span></button>
+            <button type="button" class="shutter" id="shutter" disabled aria-label="Take photo"></button>
+            <button type="button" class="round glass" id="torchBtn" hidden aria-label="Torch">@Icons.Svg("lightning-charge-fill", "ic")</button>
+            <span class="round-spacer" id="torchSpacer"></span>
+        </div>
+
+        <div class="bottom" id="reviewBottom" hidden>
+            <button type="button" class="round glass" id="rotL" aria-label="Turn left">@Icons.Svg("arrow-counterclockwise", "ic")</button>
+            <button type="button" class="btn glass" id="retake">Retake</button>
+            <button type="button" class="btn glass use" id="use">Use</button>
+            <button type="button" class="round glass" id="rotR" aria-label="Turn right">@Icons.Svg("arrow-clockwise", "ic")</button>
+        </div>
+
+        <div class="start" id="startPanel">
+            <div class="cap-brand">Trans<b>Log</b></div>
+            <p id="startText">TransLog needs your camera to photograph slips, and your location to show where the slip was taken. When Chrome asks, tap <b>Allow</b>.</p>
+            <button type="button" class="cap-go" id="startBtn">Start camera</button>
+            <a class="pill glass" href="/driver">Back</a>
+        </div>
+    </div>
+}
+
+<script src="~/resources/page-capture-queue.js" asp-append-version="true"></script>
+@if (Model.HasDriver)
+{
+    <script src="~/resources/page-capture.js" asp-append-version="true"></script>
+}
+</body>
+</html>

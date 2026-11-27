@@ -4,8 +4,10 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Localization;
 using Microsoft.EntityFrameworkCore;
 using TransLog.Web;
+using TransLog.Web.Captures;
 using TransLog.Web.Data;
 using TransLog.Web.Security;
+using TransLog.Web.Storage;
 
 // South Africa only: one fixed culture for the whole app (see AppCulture.cs).
 CultureInfo.DefaultThreadCurrentCulture = AppCulture.ZA;
@@ -99,6 +101,9 @@ builder.Services.AddScoped<AuditLogger>();
 builder.Services.AddScoped<CurrentCompany>();
 builder.Services.AddScoped<TransLog.Web.Areas.CompanyArea.LinkService>();
 builder.Services.AddScoped<AreaBadges>();
+// Part 4a: uploaded photos on disk (outside wwwroot) and saving captures.
+builder.Services.AddSingleton<IFileStore, LocalFileStore>();
+builder.Services.AddScoped<CaptureService>();
 
 builder.Services.Configure<RequestLocalizationOptions>(o =>
 {
@@ -135,6 +140,7 @@ app.UseAuthorization();
 
 app.MapStaticAssets().AllowAnonymous();
 app.MapRazorPages().WithStaticAssets();
+app.MapPhotoFiles();
 
 app.Run();
 

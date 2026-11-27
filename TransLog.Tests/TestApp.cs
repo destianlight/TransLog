@@ -17,6 +17,9 @@ public sealed class TestApp : WebApplicationFactory<Program>, IAsyncLifetime
 
     private readonly string _database = "TransLog_Test_" + Guid.NewGuid().ToString("N")[..8];
 
+    /// <summary>Uploaded photos go to a temporary folder per test class (Part 4a), deleted afterwards.</summary>
+    public string FilesRoot { get; } = Path.Combine(Path.GetTempPath(), "translog-files-" + Guid.NewGuid().ToString("N")[..8]);
+
     private string ConnectionString
     {
         get
@@ -34,6 +37,7 @@ public sealed class TestApp : WebApplicationFactory<Program>, IAsyncLifetime
         builder.UseSetting("SysAdmin:Email", AdminEmail);
         builder.UseSetting("SysAdmin:Password", AdminPassword);
         builder.UseSetting("SysAdmin:FullName", "Test Admin");
+        builder.UseSetting("Storage:Root", FilesRoot);
     }
 
     public Task InitializeAsync()
@@ -47,6 +51,7 @@ public sealed class TestApp : WebApplicationFactory<Program>, IAsyncLifetime
         using (var scope = Services.CreateScope())
             await scope.ServiceProvider.GetRequiredService<AppDbContext>().Database.EnsureDeletedAsync();
         await base.DisposeAsync();
+        try { Directory.Delete(FilesRoot, recursive: true); } catch (IOException) { } catch (UnauthorizedAccessException) { }
     }
 
     /// <summary>A fresh "phone": its own cookies, redirects not followed so tests can check them.</summary>
