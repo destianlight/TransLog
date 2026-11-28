@@ -102,7 +102,8 @@ public class Part5a2b2Tests(FakeAiWorkerApp f) : IClassFixture<FakeAiWorkerApp>
         var list = await (await owner.GetAsync("/company/captures")).Content.ReadAsStringAsync();
         Assert.Contains("data-read=\"" + id + "\"", list);
         Assert.Contains("Fuel slip", list);
-        Assert.Contains("slip date 2026-11-27", list);
+        Assert.Contains("Slip 2026-11-27", list); // Part 5b: the slip date leads, the photo date is small
+        Assert.Contains("Photo ", list);
         Assert.Contains("What the AI read", list);
         Assert.Contains("Filling station", list);
         Assert.Contains("Engen Vryburg", list);

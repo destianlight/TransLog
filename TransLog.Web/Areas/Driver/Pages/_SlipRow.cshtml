@@ -1,0 +1,35 @@
+@model TransLog.Web.Areas.DriverArea.Pages.SlipsModel.SlipRow
+@using TransLog.Web.Captures
+@* One slip on My slips (Part 5b: its own partial, fetched again by page-capture-live.js on a live message). *@
+@{
+    var s = Model;
+    var css = "tl-card p-2 d-flex gap-3 align-items-center" + (s.Reading ? " tl-scan" : "");
+    var line = (s.TypeName is null ? "" : s.TypeName + " · ") + (s.Vehicle ?? "No vehicle");
+}
+<div class="@css" data-row="@s.CaptureId" data-status="@((int)s.Status)">
+    @if (s.ImageId is int imageId)
+    {
+        <a href="/files/capture/@imageId" target="_blank" class="tl-thumb flex-shrink-0">
+            <img src="/files/capture/@imageId/thumb" alt="Slip photo" width="64" height="85" loading="lazy"
+                 class="rounded object-fit-cover bg-body-tertiary" />
+        </a>
+    }
+    <div class="small flex-grow-1 min-w-0">
+        @if (s.EventDate is DateOnly ed)
+        {
+            <div class="fw-semibold">@("Slip " + ed.ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture))</div>
+            <div class="tl-photo-date text-body-secondary">@("Photo " + AppCulture.ToSast(s.CapturedAt).ToString("yyyy-MM-dd HH:mm"))</div>
+        }
+        else
+        {
+            <div class="fw-semibold">@AppCulture.ToSast(s.CapturedAt).ToString("yyyy-MM-dd HH:mm")</div>
+        }
+        <div class="text-body-secondary text-truncate">
+            @line
+            @if (s.Source == ImageSource.Gallery) { <span> · from gallery</span> }
+            @if (s.Source == ImageSource.Office) { <span> · added by the office</span> }
+            else if (!s.HasLocation) { <span> · no location</span> }
+        </div>
+        <partial name="_CaptureProgress" model="new CaptureProgress(s.CaptureId, s.Status, s.Reading)" />
+    </div>
+</div>

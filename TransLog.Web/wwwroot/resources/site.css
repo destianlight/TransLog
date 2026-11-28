@@ -376,3 +376,22 @@ a.tl-avatar-link .tl-avatar-edit {
 
 /* Part 5a2b1: AI test page */
 .tl-aitest-preview { display: block; max-width: 100%; max-height: 22rem; height: auto; border-radius: .5rem; border: 1px solid var(--bs-border-color); }
+
+/* ---- Part 5b: live slips. Photo date under the slip date; an orange scan line over the photo while the AI reads it ---- */
+.tl-photo-date { font-size: .75rem; }
+.tl-thumb { position: relative; display: block; overflow: hidden; border-radius: var(--bs-border-radius); }
+.tl-scan .tl-thumb::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 0;
+    height: 35%;
+    background: linear-gradient(to bottom, rgba(249, 115, 22, 0), rgba(249, 115, 22, .35));
+    border-bottom: 2px solid var(--tl-orange);
+    box-shadow: 0 2px 8px rgba(249, 115, 22, .6);
+    animation: tl-scan 1.5s ease-in-out infinite alternate;
+    pointer-events: none;
+}
+@keyframes tl-scan { from { transform: translateY(-100%); } to { transform: translateY(190%); } }
+@media (prefers-reduced-motion: reduce) { .tl-scan .tl-thumb::after { animation: none; transform: none; height: 100%; opacity: .5; } }

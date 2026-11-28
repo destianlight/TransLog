@@ -16,6 +16,11 @@
             }
         </div>
 
+        @* Part 5b: shown by page-capture-live.js when new slips arrive while the list is open. *@
+        <div id="liveNew" class="alert alert-info py-2 px-3 small mb-2" data-live="/company/captures?handler=Row&amp;id=" hidden>
+            <a href="" class="alert-link"><span data-count>1 new slip</span> · Show</a>
+        </div>
+
         <div class="tl-filters mb-2">
             @foreach (var show in new[] { CaptureShow.All, CaptureShow.Busy, CaptureShow.Done })
             {
@@ -29,12 +34,12 @@
                 <input type="hidden" name="show" value="@Model.Show.ToString().ToLowerInvariant()" />
             }
             <div class="col-6 col-md-2">
-                <label class="form-label small mb-1" for="from">From</label>
+                <label class="form-label small mb-1" for="from">From (slip date)</label>
                 <input type="date" id="from" name="from" class="form-control form-control-sm"
                        value="@(Model.From is DateOnly f ? TransLog.Web.Areas.CompanyArea.Pages.Captures.IndexModel.Day(f) : "")" />
             </div>
             <div class="col-6 col-md-2">
-                <label class="form-label small mb-1" for="to">To</label>
+                <label class="form-label small mb-1" for="to">To (slip date)</label>
                 <input type="date" id="to" name="to" class="form-control form-control-sm"
                        value="@(Model.To is DateOnly t ? TransLog.Web.Areas.CompanyArea.Pages.Captures.IndexModel.Day(t) : "")" />
             </div>
@@ -68,54 +73,7 @@
             <div class="d-flex flex-column gap-2">
                 @foreach (var r in Model.Rows)
                 {
-                    <div class="tl-card p-2 d-flex gap-3 align-items-center">
-                        @if (r.ImageId is int imageId)
-                        {
-                            <a href="/files/capture/@imageId" target="_blank" class="flex-shrink-0">
-                                <img src="/files/capture/@imageId/thumb" alt="Slip photo" width="64" height="85" loading="lazy"
-                                     class="rounded object-fit-cover bg-body-tertiary" />
-                            </a>
-                        }
-                        <div class="small flex-grow-1 min-w-0">
-                            <div class="fw-semibold">@AppCulture.ToSast(r.CapturedAt).ToString("yyyy-MM-dd HH:mm")</div>
-                            <div class="text-truncate">@(r.Driver ?? "No driver") · @(r.Vehicle ?? "No vehicle")</div>
-                            <div class="text-body-secondary text-truncate">
-                                @if (r.Source == ImageSource.Office)
-                                {
-                                    <span>@(r.By.Length > 0 ? "Office upload by " + r.By : "Office upload")</span>
-                                }
-                                else
-                                {
-                                    <span>@(r.Source == ImageSource.Gallery ? "Phone (from gallery)" : "Phone")</span>
-                                    if (!r.HasLocation) { <span> · no location</span> }
-                                }
-                            </div>
-                            @if (r.TypeName is not null || r.EventDate is not null)
-                            {
-                                <div data-read="@r.CaptureId">
-                                    <strong>@(r.TypeName ?? "Type not sure")</strong>@(r.EventDate is DateOnly ed ? " · slip date " + TransLog.Web.Areas.CompanyArea.Pages.Captures.IndexModel.Day(ed) : "")
-                                </div>
-                            }
-                            @if (r.Note is not null)
-                            {
-                                <div class="text-warning-emphasis text-truncate">@Icons.Svg("exclamation-triangle") @r.Note</div>
-                            }
-                            @if (r.Values.Count > 0)
-                            {
-                                <details class="mt-1">
-                                    <summary class="text-body-secondary">What the AI read</summary>
-                                    <dl class="row mb-0 mt-1">
-                                        @foreach (var (label, value) in r.Values)
-                                        {
-                                            <dt class="col-5 fw-normal text-body-secondary">@label</dt>
-                                            <dd class="col-7 mb-0 font-monospace text-break">@value</dd>
-                                        }
-                                    </dl>
-                                </details>
-                            }
-                            <partial name="_CaptureProgress" model="new CaptureProgress(r.CaptureId, r.Status)" />
-                        </div>
-                    </div>
+                    <partial name="_CaptureRow" model="r" />
                 }
             </div>
 
@@ -144,3 +102,8 @@
         }
     </div>
 </section>
+
+@section Scripts {
+    <script src="~/resources/lib-signalr.min.js" asp-append-version="true"></script>
+    <script src="~/resources/page-capture-live.js" asp-append-version="true"></script>
+}

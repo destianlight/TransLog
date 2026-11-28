@@ -266,11 +266,10 @@ Answer in json exactly in this shape …
             <li><strong>Provider problem</strong> (no answer, key refused, no balance, too many requests): the slip keeps <em>Waiting to be read</em> and is tried again after 2, 10 and 30 minutes; after the 4th problem it goes to Being checked as Could not be read.</li>
             <li><strong>No provider</strong> (switched off or no key): the slip keeps waiting and is looked at every 5 minutes, so it is read as soon as a key works.</li>
         </ul>
-        <p>The company sees the type, slip date and a fold-out <em>What the AI read</em> on its <strong>Captures</strong> list. AI ▾ › <strong>AI reads</strong> shows you the last 50 reads across all companies (or one company): time, type, seconds, cost, prompt versions, any note and both raw answers, plus what is still waiting with its next try, and the count and cost for the last 24 hours and 30 days. Photos are not shown there.</p>
+        <p>The company sees the type, slip date and a fold-out <em>What the AI read</em> on its <strong>Captures</strong> list; the driver sees the type and slip date on <strong>My slips</strong>. Both lists move by themselves (5b): the photo shows an orange scan line and <em>Reading now…</em> while the AI reads it, the row changes when the read is done, and a bar says <em>1 new slip</em> when one arrives. The date filters use the slip date (the photo date until a slip is read). AI ▾ › <strong>AI reads</strong> shows you the reads across all companies (or one company), 20 per page with Newer and Older: time, type, seconds, cost, prompt versions, any note and both raw answers, plus what is still waiting with its next try, and the count and cost for the last 24 hours and 30 days. Photos are not shown there.</p>
 
         <h2 id="later" class="h4 mt-5">16. What comes later</h2>
         <ul class="small">
-            <li><strong>5b:</strong> the progress bar moves without a refresh (SignalR), and the lists show and filter by the slip date.</li>
             <li><strong>5c:</strong> validation rules (litres × price = total, gross − tare = net, known registrations, duplicates …).</li>
             <li><strong>5d:</strong> "Check provider" finds new prices on the provider's own site for you to approve, and "Get rate" fetches the dollar rate.</li>
             <li><strong>Part 7:</strong> the full type editor (choice lists, vehicle and driver pickers), companies' own types, and photo checks such as "Is an open diesel cap visible?".</li>

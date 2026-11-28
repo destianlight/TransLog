@@ -9,10 +9,12 @@ namespace TransLog.Web.Areas.SysAdmin.Pages;
 /// <summary>
 /// Part 5a2b2: the slips the background worker read, across all companies: type, time, tokens, cost, errors and both
 /// raw answers. No photos (SysAdmins do not open slip photos). Also what is still waiting.
+/// Part 5b: 20 reads per page with Newer / Older.
 /// </summary>
 public class AiReadsModel(AppDbContext db) : PageModel
 {
-    public const int Shown = 50;
+    /// <summary>Part 5b: 20 reads per page (Newer / Older), and at most 20 waiting slips listed.</summary>
+    public const int Shown = 20;
 
     public sealed record Row(int CaptureId, string Company, CaptureStatus Status, DateTime? ReadAt, DateTime ReceivedAt,
         string? TypeName, string? TypeConfidence, string? Model, int? Input, int? Cached, int? Output, decimal? CostZar,
@@ -32,9 +34,14 @@ public class AiReadsModel(AppDbContext db) : PageModel
 
     public int? CompanyId { get; private set; }
 
-    public async Task OnGetAsync(int? companyId)
+    public int PageNo { get; private set; } = 1;
+
+    public bool HasNext { get; private set; }
+
+    public async Task OnGetAsync(int? companyId, int p = 1)
     {
         CompanyId = companyId;
+        PageNo = Math.Clamp(p, 1, 10_000);
         var names = await db.Companies.AsNoTracking().OrderBy(c => c.Name).ToDictionaryAsync(c => c.Id, c => c.Name);
         CompanyChoices = names.Select(n => new SelectListItem(n.Value, n.Key.ToString(CultureInfo.InvariantCulture), n.Key == companyId)).ToList();
 
@@ -53,13 +60,28 @@ public class AiReadsModel(AppDbContext db) : PageModel
 
         WaitingCount = await all.CountAsync(c => c.Status == CaptureStatus.Processing);
 
-        Reads = await RowsAsync(all.Where(c => c.AiReadAt != null).OrderByDescending(c => c.AiReadAt), names);
-        Waiting = await RowsAsync(all.Where(c => c.Status == CaptureStatus.Processing).OrderBy(c => c.ReceivedAt), names);
+        Reads = await RowsAsync(all.Where(c => c.AiReadAt != null).OrderByDescending(c => c.AiReadAt).ThenByDescending(c => c.Id)
+            .Skip((PageNo - 1) * Shown).Take(Shown + 1), names);
+        HasNext = Reads.Count > Shown;
+        if (HasNext)
+            Reads.RemoveAt(Reads.Count - 1);
+        Waiting = await RowsAsync(all.Where(c => c.Status == CaptureStatus.Processing).OrderBy(c => c.ReceivedAt).Take(Shown), names);
+    }
+
+    /// <summary>Query values for a page link that keeps the company filter.</summary>
+    public Dictionary<string, string> With(int page)
+    {
+        var values = new Dictionary<string, string>();
+        if (CompanyId is int id)
+            values["companyId"] = id.ToString(CultureInfo.InvariantCulture);
+        if (page > 1)
+            values["p"] = page.ToString(CultureInfo.InvariantCulture);
+        return values;
     }
 
     private static async Task<List<Row>> RowsAsync(IQueryable<Capture> query, Dictionary<int, string> names)
     {
-        var rows = await query.Take(Shown).Select(c => new
+        var rows = await query.Select(c => new
         {
             c.Id,
             c.CompanyId,

@@ -54,7 +54,7 @@ public sealed class AiQueue
 /// <see cref="Capture.AiNextTryAt"/> = not before, <see cref="Capture.AiLockedUntil"/> = taken by a worker.
 /// Runs without a login, so every query ignores the tenant filter.
 /// </summary>
-public class CaptureReader(AppDbContext db, SlipReader reader, IFileStore files)
+public class CaptureReader(AppDbContext db, SlipReader reader, IFileStore files, TransLog.Web.Captures.CaptureLive live)
 {
     /// <summary>Longer than the slowest read (upload plus four calls of up to 90 s each).</summary>
     public static readonly TimeSpan LockTime = TimeSpan.FromMinutes(10);
@@ -104,6 +104,12 @@ public class CaptureReader(AppDbContext db, SlipReader reader, IFileStore files)
         if (capture is null || capture.Status != CaptureStatus.Processing)
             return null;
 
+        // Part 5b: the lists show "Reading now…" while the AI works on it.
+        var driverUserId = capture.DriverId is int driverId
+            ? await db.Drivers.IgnoreQueryFilters().Where(d => d.Id == driverId).Select(d => d.UserId).FirstOrDefaultAsync(ct)
+            : null;
+        await NotifyAsync(capture, driverUserId, reading: true);
+
         var image = capture.Images.OrderBy(i => i.SortOrder).FirstOrDefault();
         var photo = image is null ? null : await ReadFileAsync(image.FilePath, ct);
         if (photo is null)
@@ -113,14 +119,19 @@ public class CaptureReader(AppDbContext db, SlipReader reader, IFileStore files)
             capture.AiLockedUntil = null;
             capture.AiNextTryAt = null;
             await db.SaveChangesAsync(CancellationToken.None);
+            await NotifyAsync(capture, driverUserId, reading: false);
             return ReadOutcome.CouldNotRead;
         }
 
         var read = await reader.ReadAsync(capture.CompanyId, photo, null, ct);
         Apply(capture, read, DateTime.UtcNow);
         await db.SaveChangesAsync(CancellationToken.None);
+        await NotifyAsync(capture, driverUserId, reading: false);
         return read.Outcome;
     }
+
+    private Task NotifyAsync(Capture c, int? driverUserId, bool reading) =>
+        live.ChangedAsync(c.CompanyId, c.Id, c.Status, reading, c.CapturedByUserId, driverUserId);
 
     private async Task<byte[]?> ReadFileAsync(string path, CancellationToken ct)
     {

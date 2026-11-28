@@ -1,6 +1,6 @@
 @model TransLog.Web.Captures.CaptureProgress
-@* Four-step progress bar for one capture (Part 4b). Part 5 updates data-status and the classes live with SignalR. *@
-<div class="tl-progress @(Model.Tone.Length > 0 ? "tl-progress-" + Model.Tone : "")" data-capture-id="@Model.CaptureId" data-status="@((int)Model.Status)">
+@* Four-step progress bar for one capture (Part 4b). Part 5b: the row around it is fetched again on a live message. *@
+<div class="tl-progress @(Model.Tone.Length > 0 ? "tl-progress-" + Model.Tone : "")" data-capture-id="@Model.CaptureId" data-status="@((int)Model.Status)" data-reading="@(Model.Reading ? "1" : "0")">
     <ol aria-label="Progress">
         @for (var i = 0; i < TransLog.Web.Captures.CaptureProgress.Steps.Length; i++)
         {

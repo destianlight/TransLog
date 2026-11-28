@@ -1,4 +1,5 @@
 using System.Globalization;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
@@ -10,7 +11,8 @@ namespace TransLog.Web.Areas.CompanyArea.Pages.Captures;
 
 /// <summary>
 /// The company's captures (Part 4b), for every office role including Viewers. Newest first, 25 per page; filters for
-/// dates, driver, vehicle and All / Busy / Done. The dates are the photo date for now; Part 5 adds the slip date.
+/// dates, driver, vehicle and All / Busy / Done. Part 5b: the dates are slip dates (the photo date until a slip is read),
+/// and rows are fetched again one by one when a live message arrives.
 /// The tenant filter keeps it to this company.
 /// </summary>
 public class IndexModel(AppDbContext db) : PageModel
@@ -30,6 +32,9 @@ public class IndexModel(AppDbContext db) : PageModel
 
         /// <summary>The values read, as (label, value), only those with a value, in the type's field order.</summary>
         public List<(string Label, string Value)> Values { get; init; } = [];
+
+        /// <summary>Part 5b: the AI is reading it right now.</summary>
+        public bool Reading { get; init; }
     }
 
     public List<Row> Rows { get; private set; } = [];
@@ -64,25 +69,54 @@ public class IndexModel(AppDbContext db) : PageModel
         PageNo = Math.Clamp(p, 1, 10_000);
 
         var query = CaptureProgress.Filter(db.Captures.AsNoTracking(), Show);
+        // Part 5b: From and To are slip dates (photo date while a slip has none yet).
         if (From is DateOnly f)
-        {
-            var start = AppCulture.SastDayStartUtc(f);
-            query = query.Where(c => c.CapturedAt >= start);
-        }
+            query = CaptureProgress.FromDay(query, f);
         if (To is DateOnly t)
-        {
-            var end = AppCulture.SastDayStartUtc(t.AddDays(1));
-            query = query.Where(c => c.CapturedAt < end);
-        }
+            query = CaptureProgress.ToDay(query, t);
         if (DriverId is int d)
             query = query.Where(c => c.DriverId == d);
         if (VehicleId is int v)
             query = query.Where(c => c.VehicleId == v);
 
-        var rows = await query
+        // Newest photo first, so an old slip sent today is still on top.
+        Rows = await RowsAsync(query
             .OrderByDescending(c => c.CapturedAt).ThenByDescending(c => c.Id)
             .Skip((PageNo - 1) * PageSize)
-            .Take(PageSize + 1)
+            .Take(PageSize + 1));
+
+        HasNext = Rows.Count > PageSize;
+        if (HasNext)
+            Rows.RemoveAt(Rows.Count - 1);
+
+        DriverChoices = (await db.Drivers.AsNoTracking()
+                .OrderByDescending(x => x.IsActive).ThenBy(x => x.FirstName).ThenBy(x => x.Surname)
+                .Select(x => new { x.Id, Name = x.FirstName + " " + x.Surname, x.IsActive })
+                .ToListAsync())
+            .Select(x => new SelectListItem(x.IsActive ? x.Name : x.Name + " (off)", x.Id.ToString(CultureInfo.InvariantCulture), x.Id == DriverId))
+            .ToList();
+        VehicleChoices = (await db.Vehicles.AsNoTracking()
+                .OrderByDescending(x => x.IsActive).ThenBy(x => x.RegistrationNo)
+                .Select(x => new { x.Id, x.RegistrationNo, x.IsActive })
+                .ToListAsync())
+            .Select(x => new SelectListItem(x.IsActive ? x.RegistrationNo : x.RegistrationNo + " (off)", x.Id.ToString(CultureInfo.InvariantCulture), x.Id == VehicleId))
+            .ToList();
+    }
+
+    /// <summary>Part 5b: one row again, for the live update (page-capture-live.js). Other companies' slips are not found.</summary>
+    public async Task<IActionResult> OnGetRowAsync(int id)
+    {
+        var rows = await RowsAsync(db.Captures.AsNoTracking().Where(c => c.Id == id));
+        return rows.Count == 0 ? NotFound() : Partial(RowView, rows[0]);
+    }
+
+    public const string RowView = "/Areas/Company/Pages/Captures/_CaptureRow.cshtml";
+
+    /// <summary>Rows for an ordered and paged query (the tenant filter keeps it to this company).</summary>
+    private async Task<List<Row>> RowsAsync(IQueryable<Capture> query)
+    {
+        var now = DateTime.UtcNow;
+        var rows = await query
             .Select(c => new
             {
                 c.Id,
@@ -99,12 +133,9 @@ public class IndexModel(AppDbContext db) : PageModel
                 c.EventDate,
                 c.ErrorMessage,
                 c.DataJson,
+                Reading = c.Status == CaptureStatus.Processing && c.AiLockedUntil != null && c.AiLockedUntil > now,
             })
             .ToListAsync();
-
-        HasNext = rows.Count > PageSize;
-        if (HasNext)
-            rows.RemoveAt(rows.Count - 1);
 
         // Users have no tenant filter, so only names of this company's users are looked up.
         var companyId = User.GetCompanyId();
@@ -113,27 +144,15 @@ public class IndexModel(AppDbContext db) : PageModel
             .Where(u => ids.Contains(u.Id) && u.CompanyId == companyId)
             .ToDictionaryAsync(u => u.Id, u => u.FullName);
 
-        Rows = rows.Select(r => new Row(r.Id, r.ImageId, r.CapturedAt, r.Driver, r.Vehicle, r.Status, r.Source, r.HasLocation,
+        return rows.Select(r => new Row(r.Id, r.ImageId, r.CapturedAt, r.Driver, r.Vehicle, r.Status, r.Source, r.HasLocation,
             names.TryGetValue(r.CapturedByUserId, out var n) ? n : "")
         {
             TypeName = r.TypeName,
             EventDate = r.EventDate,
             Note = r.Status == CaptureStatus.NeedsReview ? r.ErrorMessage : null,
             Values = ValuesOf(r.FieldsJson, r.DataJson),
+            Reading = r.Reading,
         }).ToList();
-
-        DriverChoices = (await db.Drivers.AsNoTracking()
-                .OrderByDescending(x => x.IsActive).ThenBy(x => x.FirstName).ThenBy(x => x.Surname)
-                .Select(x => new { x.Id, Name = x.FirstName + " " + x.Surname, x.IsActive })
-                .ToListAsync())
-            .Select(x => new SelectListItem(x.IsActive ? x.Name : x.Name + " (off)", x.Id.ToString(CultureInfo.InvariantCulture), x.Id == DriverId))
-            .ToList();
-        VehicleChoices = (await db.Vehicles.AsNoTracking()
-                .OrderByDescending(x => x.IsActive).ThenBy(x => x.RegistrationNo)
-                .Select(x => new { x.Id, x.RegistrationNo, x.IsActive })
-                .ToListAsync())
-            .Select(x => new SelectListItem(x.IsActive ? x.RegistrationNo : x.RegistrationNo + " (off)", x.Id.ToString(CultureInfo.InvariantCulture), x.Id == VehicleId))
-            .ToList();
     }
 
     /// <summary>Query values for a link that keeps the current filters, with the chip or page changed.</summary>

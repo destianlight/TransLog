@@ -12,10 +12,10 @@ public enum CaptureShow
 
 /// <summary>
 /// The four-step progress bar on every slip (Part 4b): Sent → Reading → Checking → Done.
-/// Drawn by Pages/Shared/_CaptureProgress.cshtml. In 4b it shows the status when the page opened;
-/// Part 5 moves it live with SignalR (the bar carries data-capture-id and data-status for that).
+/// Drawn by Pages/Shared/_CaptureProgress.cshtml. Part 5b: the lists fetch the row again when a live message arrives.
+/// <paramref name="Reading"/> = the AI is reading it right now (waiting and locked by the worker): "Reading now…".
 /// </summary>
-public sealed record CaptureProgress(int CaptureId, CaptureStatus Status)
+public sealed record CaptureProgress(int CaptureId, CaptureStatus Status, bool Reading = false)
 {
     public static readonly string[] Steps = ["Sent", "Reading", "Checking", "Done"];
 
@@ -44,7 +44,7 @@ public sealed record CaptureProgress(int CaptureId, CaptureStatus Status)
     public string Label => Status switch
     {
         CaptureStatus.Uploading => "Sending",
-        CaptureStatus.Processing => "Waiting to be read",
+        CaptureStatus.Processing => Reading ? "Reading now…" : "Waiting to be read",
         CaptureStatus.NeedsReview => "Being checked",
         CaptureStatus.Approved => "Approved",
         CaptureStatus.Rejected => "Rejected",
@@ -59,6 +59,23 @@ public sealed record CaptureProgress(int CaptureId, CaptureStatus Status)
         "done" => CaptureShow.Done,
         _ => CaptureShow.All,
     };
+
+    /// <summary>
+    /// Part 5b: the date that counts is the slip date; a slip not read yet (no slip date) counts by its photo date.
+    /// </summary>
+    public static IQueryable<Capture> FromDay(IQueryable<Capture> query, DateOnly day)
+    {
+        var start = AppCulture.SastDayStartUtc(day);
+        return query.Where(c => (c.EventDate != null && c.EventDate >= day) || (c.EventDate == null && c.CapturedAt >= start));
+    }
+
+    public static IQueryable<Capture> ToDay(IQueryable<Capture> query, DateOnly day)
+    {
+        var end = AppCulture.SastDayStartUtc(day.AddDays(1));
+        return query.Where(c => (c.EventDate != null && c.EventDate <= day) || (c.EventDate == null && c.CapturedAt < end));
+    }
+
+    public static IQueryable<Capture> OnDay(IQueryable<Capture> query, DateOnly day) => ToDay(FromDay(query, day), day);
 
     public static IQueryable<Capture> Filter(IQueryable<Capture> query, CaptureShow show) => show switch
     {

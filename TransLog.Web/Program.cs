@@ -143,6 +143,9 @@ builder.Services.AddScoped<TransLog.Web.Ai.SlipReader>();
 builder.Services.AddSingleton<TransLog.Web.Ai.AiQueue>();
 builder.Services.AddScoped<TransLog.Web.Ai.CaptureReader>();
 builder.Services.AddHostedService<TransLog.Web.Ai.AiWorker>();
+// Part 5b: live slip updates (SignalR) on My slips and the Captures list.
+builder.Services.AddSignalR();
+builder.Services.AddSingleton<CaptureLive>();
 
 builder.Services.Configure<RequestLocalizationOptions>(o =>
 {
@@ -180,6 +183,7 @@ app.UseAuthorization();
 app.MapStaticAssets().AllowAnonymous();
 app.MapRazorPages().WithStaticAssets();
 app.MapPhotoFiles();
+app.MapHub<CaptureHub>(CaptureHub.Path);
 
 app.Run();
 

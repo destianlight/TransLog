@@ -22,7 +22,12 @@
             <div id="waitingList" class="d-flex flex-column gap-2"></div>
         </div>
 
-        @* Filters: All / Busy / Done and one day. *@
+        @* Part 5b: shown by page-capture-live.js when new slips arrive while the list is open. *@
+        <div id="liveNew" class="alert alert-info py-2 px-3 small mb-3" data-live="/driver/slips?handler=Row&amp;id=" hidden>
+            <a href="" class="alert-link"><span data-count>1 new slip</span> · Show</a>
+        </div>
+
+        @* Filters: All / Busy / Done and one day (the slip date; the photo date until a slip is read). *@
         <form method="get" class="tl-filters mb-3" id="slipFilters">
             @foreach (var show in new[] { CaptureShow.All, CaptureShow.Busy, CaptureShow.Done })
             {
@@ -32,7 +37,7 @@
             {
                 <input type="hidden" name="show" value="@Model.Show.ToString().ToLowerInvariant()" />
             }
-            <input type="date" name="day" class="form-control form-control-sm w-auto ms-auto" aria-label="Day"
+            <input type="date" name="day" class="form-control form-control-sm w-auto ms-auto" aria-label="Slip date"
                    value="@(Model.Day?.ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture))" />
             @if (Model.Day is not null)
             {
@@ -49,25 +54,7 @@
             <div class="d-flex flex-column gap-2">
                 @foreach (var s in Model.Slips)
                 {
-                    <div class="tl-card p-2 d-flex gap-3 align-items-center">
-                        @if (s.ImageId is int imageId)
-                        {
-                            <a href="/files/capture/@imageId" target="_blank" class="flex-shrink-0">
-                                <img src="/files/capture/@imageId/thumb" alt="Slip photo" width="64" height="85" loading="lazy"
-                                     class="rounded object-fit-cover bg-body-tertiary" />
-                            </a>
-                        }
-                        <div class="small flex-grow-1 min-w-0">
-                            <div class="fw-semibold">@AppCulture.ToSast(s.CapturedAt).ToString("yyyy-MM-dd HH:mm")</div>
-                            <div class="text-body-secondary text-truncate">
-                                @(s.Vehicle ?? "No vehicle")
-                                @if (s.Source == ImageSource.Gallery) { <span> · from gallery</span> }
-                                @if (s.Source == ImageSource.Office) { <span> · added by the office</span> }
-                                else if (!s.HasLocation) { <span> · no location</span> }
-                            </div>
-                            <partial name="_CaptureProgress" model="new CaptureProgress(s.CaptureId, s.Status)" />
-                        </div>
-                    </div>
+                    <partial name="_SlipRow" model="s" />
                 }
             </div>
             @if (Model.HasMore)
@@ -82,6 +69,8 @@
 
 @section Scripts {
     <script src="~/resources/page-capture-queue.js" asp-append-version="true"></script>
+    <script src="~/resources/lib-signalr.min.js" asp-append-version="true"></script>
+    <script src="~/resources/page-capture-live.js" asp-append-version="true"></script>
     <script>
         (function () {
             var box = document.getElementById('waiting'), list = document.getElementById('waitingList'), urls = [];

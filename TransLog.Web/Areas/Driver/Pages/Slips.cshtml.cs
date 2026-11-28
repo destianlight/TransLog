@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
 using TransLog.Web.Captures;
@@ -10,12 +11,24 @@ namespace TransLog.Web.Areas.DriverArea.Pages;
 /// <summary>
 /// My slips: photos still waiting on the phone (drawn by page-capture-queue.js) and the driver's sent captures.
 /// Part 4b: the 15 most recent first with "Show 15 more", chips All / Busy / Done, and one day to show.
+/// Part 5b: the type and slip date show (photo date small); the day filter uses the slip date (photo date until read);
+/// rows are fetched again one by one when a live message arrives.
 /// </summary>
 public class SlipsModel(AppDbContext db) : PageModel
 {
     public const int PageSize = 15;
 
-    public record SlipRow(int CaptureId, int? ImageId, DateTime CapturedAt, string? Vehicle, CaptureStatus Status, ImageSource? Source, bool HasLocation);
+    public record SlipRow(int CaptureId, int? ImageId, DateTime CapturedAt, string? Vehicle, CaptureStatus Status, ImageSource? Source, bool HasLocation)
+    {
+        // Part 5b
+        public string? TypeName { get; init; }
+
+        public DateOnly? EventDate { get; init; }
+
+        public bool Reading { get; init; }
+    }
+
+    public const string RowView = "/Areas/Driver/Pages/_SlipRow.cshtml";
 
     public List<SlipRow> Slips { get; private set; } = [];
 
@@ -36,19 +49,37 @@ public class SlipsModel(AppDbContext db) : PageModel
         Day = AppCulture.ParseDay(day);
         Take = Math.Clamp(take / PageSize * PageSize, PageSize, 20 * PageSize);
 
-        var userId = User.GetUserId();
-        // The tenant filter keeps this inside the driver's own company.
-        var query = db.Captures.AsNoTracking().Where(c => c.CapturedByUserId == userId || c.Driver!.UserId == userId);
-        query = CaptureProgress.Filter(query, Show);
+        var query = CaptureProgress.Filter(Mine(), Show);
         if (Day is DateOnly d)
-        {
-            DateTime start = AppCulture.SastDayStartUtc(d), end = AppCulture.SastDayStartUtc(d.AddDays(1));
-            query = query.Where(c => c.CapturedAt >= start && c.CapturedAt < end);
-        }
+            query = CaptureProgress.OnDay(query, d);
 
-        Slips = await query
+        Slips = await RowsAsync(query
             .OrderByDescending(c => c.CapturedAt).ThenByDescending(c => c.Id)
-            .Take(Take + 1)
+            .Take(Take + 1));
+
+        HasMore = Slips.Count > Take;
+        if (HasMore)
+            Slips.RemoveAt(Slips.Count - 1);
+    }
+
+    /// <summary>Part 5b: one row again, for the live update. Only the driver's own slips.</summary>
+    public async Task<IActionResult> OnGetRowAsync(int id)
+    {
+        var rows = await RowsAsync(Mine().Where(c => c.Id == id));
+        return rows.Count == 0 ? NotFound() : Partial(RowView, rows[0]);
+    }
+
+    /// <summary>Slips this driver sent or that are his (the tenant filter keeps it inside his company).</summary>
+    private IQueryable<Capture> Mine()
+    {
+        var userId = User.GetUserId();
+        return db.Captures.AsNoTracking().Where(c => c.CapturedByUserId == userId || c.Driver!.UserId == userId);
+    }
+
+    private static Task<List<SlipRow>> RowsAsync(IQueryable<Capture> query)
+    {
+        var now = DateTime.UtcNow;
+        return query
             .Select(c => new SlipRow(
                 c.Id,
                 c.Images.OrderBy(i => i.SortOrder).Select(i => (int?)i.Id).FirstOrDefault(),
@@ -56,12 +87,13 @@ public class SlipsModel(AppDbContext db) : PageModel
                 c.Vehicle != null ? c.Vehicle.RegistrationNo : null,
                 c.Status,
                 c.Images.OrderBy(i => i.SortOrder).Select(i => (ImageSource?)i.Source).FirstOrDefault(),
-                c.Images.Any(i => i.Latitude != null)))
+                c.Images.Any(i => i.Latitude != null))
+            {
+                TypeName = c.CaptureType != null ? c.CaptureType.Name : null,
+                EventDate = c.EventDate,
+                Reading = c.Status == CaptureStatus.Processing && c.AiLockedUntil != null && c.AiLockedUntil > now,
+            })
             .ToListAsync();
-
-        HasMore = Slips.Count > Take;
-        if (HasMore)
-            Slips.RemoveAt(Slips.Count - 1);
     }
 
     /// <summary>Query values for a link that keeps the current filters, with some changed.</summary>
