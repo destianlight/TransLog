@@ -405,6 +405,140 @@ namespace TransLog.Web.Data.Migrations
                     b.ToTable("CaptureImages");
                 });
 
+            modelBuilder.Entity("TransLog.Web.Data.CaptureType", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("CurrentVersion")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<string>("FieldsJson")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Key")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("nvarchar(40)");
+
+                    b.Property<int>("Kind")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("Prompt")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("Scope")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int?>("UpdatedByUserId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Key")
+                        .IsUnique()
+                        .HasFilter("[Scope] = 0");
+
+                    b.HasIndex("UpdatedByUserId");
+
+                    b.HasIndex("Kind", "Key");
+
+                    b.ToTable("CaptureTypes");
+                });
+
+            modelBuilder.Entity("TransLog.Web.Data.CaptureTypeCompany", b =>
+                {
+                    b.Property<int>("CaptureTypeId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("CompanyId")
+                        .HasColumnType("int");
+
+                    b.HasKey("CaptureTypeId", "CompanyId");
+
+                    b.HasIndex("CompanyId");
+
+                    b.ToTable("CaptureTypeCompanies");
+                });
+
+            modelBuilder.Entity("TransLog.Web.Data.CaptureTypeVersion", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("CaptureTypeId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("CompanyIds")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int?>("CreatedByUserId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<string>("FieldsJson")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("Prompt")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("Scope")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Version")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreatedByUserId");
+
+                    b.HasIndex("CaptureTypeId", "Version")
+                        .IsUnique();
+
+                    b.ToTable("CaptureTypeVersions");
+                });
+
             modelBuilder.Entity("TransLog.Web.Data.Company", b =>
                 {
                     b.Property<int>("Id")
@@ -788,6 +922,43 @@ namespace TransLog.Web.Data.Migrations
                     b.Navigation("Capture");
                 });
 
+            modelBuilder.Entity("TransLog.Web.Data.CaptureType", b =>
+                {
+                    b.HasOne("TransLog.Web.Data.AppUser", null)
+                        .WithMany()
+                        .HasForeignKey("UpdatedByUserId")
+                        .OnDelete(DeleteBehavior.Restrict);
+                });
+
+            modelBuilder.Entity("TransLog.Web.Data.CaptureTypeCompany", b =>
+                {
+                    b.HasOne("TransLog.Web.Data.CaptureType", null)
+                        .WithMany("Companies")
+                        .HasForeignKey("CaptureTypeId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("TransLog.Web.Data.Company", null)
+                        .WithMany()
+                        .HasForeignKey("CompanyId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("TransLog.Web.Data.CaptureTypeVersion", b =>
+                {
+                    b.HasOne("TransLog.Web.Data.CaptureType", null)
+                        .WithMany()
+                        .HasForeignKey("CaptureTypeId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("TransLog.Web.Data.AppUser", null)
+                        .WithMany()
+                        .HasForeignKey("CreatedByUserId")
+                        .OnDelete(DeleteBehavior.Restrict);
+                });
+
             modelBuilder.Entity("TransLog.Web.Data.Driver", b =>
                 {
                     b.HasOne("TransLog.Web.Data.Company", null)
@@ -859,6 +1030,11 @@ namespace TransLog.Web.Data.Migrations
             modelBuilder.Entity("TransLog.Web.Data.Capture", b =>
                 {
                     b.Navigation("Images");
+                });
+
+            modelBuilder.Entity("TransLog.Web.Data.CaptureType", b =>
+                {
+                    b.Navigation("Companies");
                 });
 
             modelBuilder.Entity("TransLog.Web.Data.Company", b =>
