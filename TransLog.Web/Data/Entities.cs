@@ -29,6 +29,9 @@ public class Company
     /// <summary>Who may link a driver to a vehicle (Part 3). Set by the Owner.</summary>
     public DriverLinking DriverLinking { get; set; } = DriverLinking.DriversAndCompany;
 
+    /// <summary>Part 5a2a: the AI provider for this company; empty = the global one (Platform settings). Set by SysAdmins only.</summary>
+    public int? AiProviderId { get; set; }
+
     public bool IsActive { get; set; } = true;
 
     /// <summary>UTC.</summary>

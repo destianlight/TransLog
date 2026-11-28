@@ -131,6 +131,10 @@ builder.Services.AddScoped<CaptureService>();
 builder.Services.AddScoped<TransLog.Web.Fleet.DriverPhotos>();
 // Part 5a1: AI prompts and capture types, managed by SysAdmins.
 builder.Services.AddScoped<TransLog.Web.Ai.PromptService>();
+// Part 5a2a: AI providers (keys encrypted with the data protection keys above), prices and platform settings.
+builder.Services.AddSingleton<TransLog.Web.Ai.AiKeys>();
+builder.Services.AddScoped<TransLog.Web.Ai.AiProviders>();
+builder.Services.AddHttpClient("ai", c => c.Timeout = TimeSpan.FromSeconds(20));
 
 builder.Services.Configure<RequestLocalizationOptions>(o =>
 {

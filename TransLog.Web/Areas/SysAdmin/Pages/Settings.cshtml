@@ -1,0 +1,53 @@
+@page
+@model TransLog.Web.Areas.SysAdmin.Pages.SettingsModel
+@{
+    ViewData["Title"] = "Platform settings";
+}
+
+<section class="tl-section">
+    <div class="container" style="max-width: 720px">
+        <p class="mb-2 d-flex justify-content-between"><a asp-page="/Providers/Index">&larr; AI providers</a><a href="/sysadmin/aihelp#settings">@Icons.Svg("question-circle") Help</a></p>
+        <h1 class="tl-h2 mb-3">Platform settings</h1>
+
+        @if (TempData["Message"] is string message)
+        {
+            <div class="alert alert-success">@message</div>
+        }
+
+        <form method="post" class="tl-card">
+            <div asp-validation-summary="ModelOnly" class="alert alert-danger small" role="alert"></div>
+
+            <div class="mb-4">
+                <label for="Provider" class="form-label">Global AI provider</label>
+                <select id="Provider" name="Provider" class="form-select">
+                    @foreach (var c in Model.Choices)
+                    {
+                        <option value="@c.Key" selected="@(c.Key == Model.Provider)">@c.Name</option>
+                    }
+                </select>
+                <div class="form-text">Reads every company's slips unless the company has its own provider (on its company page). Only providers that are on and have an API key are listed.</div>
+            </div>
+
+            <div class="mb-4">
+                <label for="UsdToZar" class="form-label">Rand per US dollar</label>
+                <input id="UsdToZar" name="UsdToZar" value="@Model.UsdToZar" class="form-control" inputmode="decimal" style="max-width: 10rem" />
+                <div class="form-text">
+                    Used to show AI costs in rand. Update it by hand now and then.
+                    @if (Model.RateUpdatedAt is DateTime at)
+                    {
+                        <span>Last changed @AppCulture.ToSast(at).ToString("yyyy-MM-dd").</span>
+                    }
+                </div>
+            </div>
+
+            <div class="form-check form-switch mb-4">
+                <input class="form-check-input" type="checkbox" role="switch" id="AutoRotate" name="AutoRotate" value="true" checked="@Model.AutoRotate" />
+                <input type="hidden" name="AutoRotate" value="false" />
+                <label class="form-check-label" for="AutoRotate">AI auto-rotate</label>
+                <div class="form-text">When on, the AI says which way up a photo is and the server turns it before reading. Not used yet: it needs an image library on the server (a later part). Keep it off.</div>
+            </div>
+
+            <button type="submit" class="btn btn-tl">Save</button>
+        </form>
+    </div>
+</section>

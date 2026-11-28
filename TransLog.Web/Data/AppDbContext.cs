@@ -37,6 +37,12 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, CurrentCompany
 
     public DbSet<CaptureTypeVersion> CaptureTypeVersions => Set<CaptureTypeVersion>();
 
+    public DbSet<AiProvider> AiProviders => Set<AiProvider>();
+
+    public DbSet<AiPrice> AiPrices => Set<AiPrice>();
+
+    public DbSet<PlatformSetting> PlatformSettings => Set<PlatformSetting>();
+
     protected override void OnModelCreating(ModelBuilder b)
     {
         base.OnModelCreating(b);
@@ -173,6 +179,32 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, CurrentCompany
             e.HasOne<AppUser>().WithMany().HasForeignKey(v => v.CreatedByUserId).OnDelete(DeleteBehavior.Restrict);
             e.HasIndex(v => new { v.CaptureTypeId, v.Version }).IsUnique();
         });
+
+        // ---- AI providers, prices and platform settings (Part 5a2a) ----
+        // Platform tables managed by SysAdmins: no tenant filter.
+        b.Entity<AiProvider>(e =>
+        {
+            e.HasIndex(p => p.Key).IsUnique();
+            e.HasOne<AppUser>().WithMany().HasForeignKey(p => p.UpdatedByUserId).OnDelete(DeleteBehavior.Restrict);
+        });
+
+        b.Entity<AiPrice>(e =>
+        {
+            e.HasOne<AiProvider>().WithMany().HasForeignKey(p => p.AiProviderId).OnDelete(DeleteBehavior.Restrict);
+            e.HasOne<AppUser>().WithMany().HasForeignKey(p => p.CreatedByUserId).OnDelete(DeleteBehavior.Restrict);
+            e.HasIndex(p => new { p.AiProviderId, p.Model, p.EffectiveFrom });
+            foreach (var name in new[] { nameof(AiPrice.InputPerM), nameof(AiPrice.CachedInputPerM), nameof(AiPrice.OutputPerM),
+                         nameof(AiPrice.OffPeakInputPerM), nameof(AiPrice.OffPeakCachedPerM), nameof(AiPrice.OffPeakOutputPerM) })
+                e.Property(name).HasPrecision(12, 6);
+        });
+
+        b.Entity<PlatformSetting>(e =>
+        {
+            e.HasKey(s => s.Key);
+            e.HasOne<AppUser>().WithMany().HasForeignKey(s => s.UpdatedByUserId).OnDelete(DeleteBehavior.Restrict);
+        });
+
+        b.Entity<Company>().HasOne<AiProvider>().WithMany().HasForeignKey(c => c.AiProviderId).OnDelete(DeleteBehavior.Restrict);
 
         // ---- Tenant filter ----
         // Every table that belongs to a company gets one line like this, so a company only ever

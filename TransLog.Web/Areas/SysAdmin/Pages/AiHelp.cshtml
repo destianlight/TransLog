@@ -1,5 +1,5 @@
 @page
-@* Part 5a1: help for SysAdmins on the AI pages. 5a2 adds AI providers, prices and the AI test page. *@
+@* Help for SysAdmins on the AI pages: prompts (5a1), providers, prices and settings (5a2a). 5a2b adds the AI test page. *@
 @{
     ViewData["Title"] = "AI help";
 }
@@ -23,6 +23,9 @@
                 <li><a href="#tasks">Common jobs, step by step</a></li>
                 <li><a href="#refused">Why a save is refused</a></li>
                 <li><a href="#tips">Writing good prompts</a></li>
+                <li><a href="#providers">AI providers and API keys</a></li>
+                <li><a href="#prices">Prices and cost</a></li>
+                <li><a href="#settings">Platform settings</a></li>
                 <li><a href="#later">What comes later</a></li>
             </ol>
         </nav>
@@ -34,7 +37,7 @@
             <li><strong>Step 2, read:</strong> the chosen <strong>capture type's prompt</strong> asks for that type's fields and gets them back as json.</li>
         </ol>
         <p>If step 1 says "other" or is not sure, the slip goes to review and the reviewer picks the type. The AI only fills in the data: TransLog's own checks and the reviewer decide whether it is right.</p>
-        <div class="alert alert-info small">The reading itself starts in Part 5a2. Until then you can set up and test the prompts here, but no slip is sent to the AI yet.</div>
+        <div class="alert alert-info small">The reading itself starts in Part 5a2b. Until then you can set up and test the prompts here, but no slip is sent to the AI yet.</div>
 
         <h2 id="kinds" class="h4 mt-5">2. The three kinds of entry</h2>
         <div class="table-responsive">
@@ -79,7 +82,7 @@ Answer in json exactly in this shape …
                     <tr><td>Label</td><td>What people see on the review form, and what the AI is told the field is. Make it clear ("Total amount", not "Amt").</td></tr>
                     <tr><td>Type</td><td>Text, Number, Money (R), Date or Yes / no. Codes and registrations are always Text, even when they look like numbers.</td></tr>
                     <tr><td>Unit</td><td>Optional: km, l, kg, R/l. Shown to the AI and on the form.</td></tr>
-                    <tr><td>Core column</td><td>Puts the value in a real column on the slip for lists and reports (from 5a2). Each one at most once per type.</td></tr>
+                    <tr><td>Core column</td><td>Puts the value in a real column on the slip for lists and reports (from 5a2b). Each one at most once per type.</td></tr>
                     <tr><td>Required</td><td>The field should be on every slip of this type; the AI is told to look carefully, and later a missing value flags the slip.</td></tr>
                 </tbody>
             </table>
@@ -125,7 +128,7 @@ Answer in json exactly in this shape …
             <li><strong>History</strong> (button on the entry, or the version number in the list) shows every version, newest first. Tap one to see it.</li>
             <li><strong>Restore this version</strong> saves the old content as a <em>new</em> version: restoring v1 when you are on v2 makes v3. The same checks as a normal save apply, so a restore can be refused if, for example, a ticked company now has another version.</li>
             <li>Every save and restore is in the <strong>Audit log</strong> (PromptCreated, PromptUpdated, PromptRestored).</li>
-            <li>From 5a2 each slip records which versions read it, so you can compare before and after a change.</li>
+            <li>From 5a2b each slip records which versions read it, so you can compare before and after a change.</li>
         </ul>
 
         <h2 id="effective" class="h4 mt-5">7. Effective for company</h2>
@@ -183,13 +186,52 @@ Answer in json exactly in this shape …
             <li><strong>Never ask the AI to work things out</strong> (VAT, net mass, litres × price). TransLog checks the sums itself (Part 5c); the AI must only read.</li>
             <li><strong>Codes stay text.</strong> The AI mixes up S and 8, O and 0. The system prompt warns it, and TransLog's checks and the reviewer catch the rest; a confident "high" is not proof.</li>
             <li><strong>Descriptions should differ.</strong> If two types sound alike, step 1 will mix them up. Say what makes each one different ("not a fuel slip").</li>
-            <li><strong>Change one thing at a time</strong> and test it on a few real slips (AI test page, from 5a2). If it gets worse, restore.</li>
+            <li><strong>Change one thing at a time</strong> and test it on a few real slips (AI test page, from 5a2b). If it gets worse, restore.</li>
             <li><strong>Keep it short.</strong> Every word is paid for on every slip; the system prompt and photo are cached, the rest is not.</li>
         </ul>
 
-        <h2 id="later" class="h4 mt-5">11. What comes later</h2>
+        <h2 id="providers" class="h4 mt-5">11. AI providers and API keys</h2>
+        <p>AI ▾ › <strong>AI providers</strong> lists the companies whose AI reads the slips. <strong>DeepSeek</strong> is there from the start (model <code>deepseek-flash</code>, the DeepSeek model that reads photos) but has no key until you type one.</p>
+        <div class="tl-card mb-3">
+            <h3 class="h6">Add the DeepSeek key</h3>
+            <ol class="small mb-0">
+                <li>On platform.deepseek.com, create an API key (it starts with <code>sk-</code>) and copy it.</li>
+                <li>AI ▾ › AI providers › <strong>DeepSeek</strong>. Paste it into <strong>API key</strong> and Save. The page then shows "set ••••" with its last 4 characters.</li>
+                <li>Tap <strong>Test</strong>: "The key works and deepseek-flash is available" means all is well. The test only asks DeepSeek for its model list, so it costs nothing.</li>
+            </ol>
+        </div>
+        <ul>
+            <li>The key is stored <strong>encrypted</strong> and never shown again, not even to you. To change it, type the new one; to remove it, tick <em>Clear the stored key</em>.</li>
+            <li>The encryption uses the same server keys as the login (<code>App_Data/keys</code>). If that folder is lost (a new server without a backup), the stored key cannot be read: Test then says so and you type it again. Keep <code>App_Data/keys</code> in the backups.</li>
+            <li>A key in the server settings (<code>Ai:Providers:deepseek:ApiKey</code>) wins over a typed one; the page then says "from server settings".</li>
+            <li>Only providers that are <strong>on and have a key</strong> can be chosen. The global provider, or one a company uses, cannot be switched off until you choose another.</li>
+            <li>A company can have its own provider on its company page (SysAdmin › Companies › the company › <strong>AI provider</strong>). "Use global" follows Platform settings.</li>
+            <li>For now only DeepSeek's own API is built. OpenRouter and other providers can be added later as one more kind.</li>
+            <li>Every change is in the Audit log (AiProviderCreated, AiProviderUpdated, CompanyAiProviderChanged); the key itself is never written there.</li>
+        </ul>
+
+        <h2 id="prices" class="h4 mt-5">12. Prices and cost</h2>
+        <p>AI providers › the provider › <strong>Prices</strong>. Prices are US dollars per 1 million tokens (a token is a short piece of text; a photo counts as several hundred).</p>
+        <ul>
+            <li><strong>Input</strong> is what TransLog sends, <strong>Cached</strong> the part the provider already has from the first call (much cheaper), <strong>Output</strong> the answer.</li>
+            <li>DeepSeek is cheaper <strong>off-peak</strong>. Peak is 01:00-04:00 and 06:00-10:00 UTC on weekdays, which is 03:00-06:00 and 08:00-12:00 South African time. Leave the off-peak boxes empty when a price is the same all day.</li>
+            <li>When the provider changes its prices, <strong>add a new row</strong> with the date the change starts. Rows are never edited: the newest row on or before a slip's reading time counts, so old slips keep the cost of their time.</li>
+            <li><strong>Typical slip</strong> shows what one slip costs with that price (two calls, about 2 400 tokens in, 600 out): about R0.01 to R0.02.</li>
+            <li>Costs are estimates from the token counts the AI reports, not the provider's bill. Compare with the provider's usage page now and then. Chinese public holidays are counted as peak, so the estimate is a little high, never low.</li>
+        </ul>
+
+        <h2 id="settings" class="h4 mt-5">13. Platform settings</h2>
+        <ul>
+            <li><strong>Global AI provider:</strong> reads every company's slips unless the company has its own.</li>
+            <li><strong>Rand per US dollar:</strong> turns the dollar costs into rand. Update it by hand now and then (a "Get rate" button comes later). Each slip keeps the rate used when it was read.</li>
+            <li><strong>AI auto-rotate:</strong> keep it off. It needs an image library on the server, which comes in a later part.</li>
+            <li>Every change is in the Audit log with the old and new value (PlatformSettingChanged).</li>
+        </ul>
+
+        <h2 id="later" class="h4 mt-5">14. What comes later</h2>
         <ul class="small">
-            <li><strong>5a2:</strong> the AI actually reads slips with these prompts; AI providers and keys, prices and cost per slip, and an AI test page to try a photo with any company's prompts.</li>
+            <li><strong>5a2b:</strong> the AI actually reads slips with these prompts and the chosen provider, and stores the cost in rand on each slip; an AI test page to try a photo with any company's prompts.</li>
+            <li><strong>5d:</strong> "Check provider" finds new prices on the provider's own site for you to approve, and "Get rate" fetches the dollar rate.</li>
             <li><strong>Part 7:</strong> the full type editor (choice lists, vehicle and driver pickers), companies' own types, and photo checks such as "Is an open diesel cap visible?".</li>
         </ul>
     </div>

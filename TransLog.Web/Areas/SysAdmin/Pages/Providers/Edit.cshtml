@@ -1,0 +1,105 @@
+@page "{id:int?}"
+@model TransLog.Web.Areas.SysAdmin.Pages.Providers.EditModel
+@{
+    ViewData["Title"] = Model.Provider?.Name ?? "Add AI provider";
+}
+
+<section class="tl-section">
+    <div class="container" style="max-width: 860px">
+        <p class="mb-2 d-flex justify-content-between"><a asp-page="Index">&larr; AI providers</a><a href="/sysadmin/aihelp#providers">@Icons.Svg("question-circle") Help</a></p>
+        <h1 class="tl-h2 mb-3">@(Model.Provider?.Name ?? "Add AI provider")</h1>
+
+        @if (TempData["Message"] is string message)
+        {
+            <div class="alert alert-success" data-test-message>@message</div>
+        }
+        @if (TempData["TestError"] is string testError)
+        {
+            <div class="alert alert-danger" data-test-message>@testError</div>
+        }
+
+        @if (Model.Provider is not null)
+        {
+            <div class="tl-card mb-4 d-flex flex-wrap justify-content-between align-items-center gap-2">
+                <div>
+                    <div class="small text-body-secondary">API key</div>
+                    <div class="fw-semibold" data-key-status>@Model.KeyStatus</div>
+                </div>
+                <div class="d-flex flex-wrap gap-2">
+                    <a class="btn btn-outline-secondary" asp-page="Prices" asp-route-id="@Model.Provider.Id">Prices</a>
+                    <form method="post" asp-page-handler="Test" asp-route-id="@Model.Provider.Id">
+                        <button type="submit" class="btn btn-outline-secondary">@Icons.Svg("lightning-charge-fill") Test</button>
+                    </form>
+                </div>
+            </div>
+        }
+
+        <form method="post" class="tl-card" autocomplete="off">
+            <div asp-validation-summary="ModelOnly" class="alert alert-danger small" role="alert"></div>
+
+            <div class="row g-3 mb-3">
+                <div class="col-md-6">
+                    <label asp-for="Form.Name" class="form-label">Name</label>
+                    <input asp-for="Form.Name" class="form-control" maxlength="100" />
+                </div>
+                <div class="col-md-6">
+                    <label for="Form_Key" class="form-label">Key</label>
+                    @if (Model.Provider is not null)
+                    {
+                        <input id="Form_Key" class="form-control font-monospace" value="@Model.Provider.Key" readonly />
+                    }
+                    else
+                    {
+                        <input asp-for="Form.Key" class="form-control font-monospace" maxlength="40" autocapitalize="none" spellcheck="false" placeholder="deepseek2" />
+                    }
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Kind</label>
+                    <input class="form-control" value="DeepSeek (Files API)" readonly />
+                    <div class="form-text">Other kinds (OpenRouter and other OpenAI-style APIs) come later.</div>
+                </div>
+                <div class="col-md-6">
+                    <label asp-for="Form.Model" class="form-label">Model</label>
+                    <input asp-for="Form.Model" class="form-control font-monospace" maxlength="100" autocapitalize="none" spellcheck="false" />
+                </div>
+                <div class="col-12">
+                    <label asp-for="Form.BaseUrl" class="form-label">Base URL</label>
+                    <input asp-for="Form.BaseUrl" class="form-control font-monospace" maxlength="200" autocapitalize="none" spellcheck="false" />
+                </div>
+                <div class="col-md-6">
+                    <label asp-for="Form.OfficialDomain" class="form-label">Official domain</label>
+                    <input asp-for="Form.OfficialDomain" class="form-control font-monospace" maxlength="100" autocapitalize="none" spellcheck="false" placeholder="deepseek.com" />
+                    <div class="form-text">Used later to trust only prices found on the provider's own site.</div>
+                </div>
+                <div class="col-md-6">
+                    <label asp-for="Form.PricingUrl" class="form-label">Pricing page</label>
+                    <input asp-for="Form.PricingUrl" class="form-control font-monospace" maxlength="300" autocapitalize="none" spellcheck="false" />
+                </div>
+            </div>
+
+            <h2 class="h5 mt-4">API key</h2>
+            <p class="small text-body-secondary mb-2">
+                Stored encrypted and never shown again. Leave the box empty to keep the current key.
+                @if (Model.KeyFromServer)
+                {
+                    <strong>A key in the server settings is in use; it wins over a typed key.</strong>
+                }
+            </p>
+            <input asp-for="Form.ApiKey" type="password" class="form-control font-monospace mb-2" autocomplete="new-password" autocapitalize="none" spellcheck="false" placeholder="sk-…" />
+            @if (Model.Provider?.ApiKeyProtected is not null)
+            {
+                <div class="form-check mb-3">
+                    <input asp-for="Form.ClearKey" class="form-check-input" />
+                    <label asp-for="Form.ClearKey" class="form-check-label">Clear the stored key</label>
+                </div>
+            }
+
+            <div class="form-check form-switch my-4">
+                <input asp-for="Form.IsActive" class="form-check-input" role="switch" />
+                <label asp-for="Form.IsActive" class="form-check-label">On</label>
+            </div>
+
+            <button type="submit" class="btn btn-tl">Save</button>
+        </form>
+    </div>
+</section>

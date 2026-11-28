@@ -1,0 +1,119 @@
+@page "{id:int}"
+@model TransLog.Web.Areas.SysAdmin.Pages.Providers.PricesModel
+@using TransLog.Web.Ai
+@{
+    ViewData["Title"] = "Prices: " + Model.Provider.Name;
+}
+
+<section class="tl-section">
+    <div class="container" style="max-width: 980px">
+        <p class="mb-2 d-flex justify-content-between"><a asp-page="Edit" asp-route-id="@Model.Provider.Id">&larr; @Model.Provider.Name</a><a href="/sysadmin/aihelp#prices">@Icons.Svg("question-circle") Help</a></p>
+        <h1 class="tl-h2 mb-1">Prices</h1>
+        <p class="text-body-secondary">
+            @Model.Provider.Name · model <code>@Model.Provider.Model</code> · US dollars per 1 million tokens · rate @("R" + AiPricing.Show(Model.UsdToZar)) to the dollar
+            (<a asp-page="/Settings">change</a>). The newest row on or before today counts; rows are never changed.
+        </p>
+
+        @if (TempData["Message"] is string message)
+        {
+            <div class="alert alert-success">@message</div>
+        }
+
+        @if (Model.Provider.PricingUrl is string url)
+        {
+            <p class="small">Check the provider's own page: <a href="@url" target="_blank" rel="noopener">@url</a></p>
+        }
+
+        <div class="table-responsive mb-4">
+            <table class="table small align-middle">
+                <thead><tr><th>From</th><th>Model</th><th>In · cached · out</th><th>Off-peak</th><th>Typical slip</th><th>Added</th></tr></thead>
+                <tbody>
+                    @foreach (var p in Model.Prices)
+                    {
+                        <tr data-price-id="@p.Id" class="@(p.Id == Model.CurrentId ? "table-success" : "")">
+                            <td>
+                                @AppCulture.ToSast(p.EffectiveFrom).ToString("yyyy-MM-dd")
+                                @if (p.Id == Model.CurrentId)
+                                {
+                                    <div><span class="badge text-bg-success">In use</span></div>
+                                }
+                            </td>
+                            <td><code>@p.Model</code></td>
+                            <td>@AiPricing.Usd(p.InputPerM) · @AiPricing.Usd(p.CachedInputPerM) · @AiPricing.Usd(p.OutputPerM)</td>
+                            <td>
+                                @if (AiPricing.HasOffPeak(p))
+                                {
+                                    <span>@AiPricing.Usd(p.OffPeakInputPerM) · @AiPricing.Usd(p.OffPeakCachedPerM) · @AiPricing.Usd(p.OffPeakOutputPerM)</span>
+                                    <div class="text-body-secondary">peak @(p.PeakHoursUtc ?? "all day") UTC @p.PeakDays</div>
+                                }
+                                else
+                                {
+                                    <span class="text-body-secondary">one price all day</span>
+                                }
+                            </td>
+                            <td>@Model.Typical(p)</td>
+                            <td>
+                                @(p.Source == AiPriceSource.PriceCheck ? "Price check" : "By hand")
+                                <div class="text-body-secondary">@(p.CreatedByUserId is int u ? Model.Users.GetValueOrDefault(u, "?") : "TransLog (built in)")</div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+        <p class="small text-body-secondary">Typical slip = two calls with about 2 400 input tokens (1 000 from the cache) and 600 output tokens; peak is a weekday 09:00, off-peak 14:00 South African time. Real costs are worked out per slip from the tokens the AI reports.</p>
+
+        <h2 class="h4 mt-4">Add a new price</h2>
+        <form method="post" class="tl-card" autocomplete="off">
+            <div asp-validation-summary="ModelOnly" class="alert alert-danger small" role="alert"></div>
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label asp-for="Form.Model" class="form-label">Model</label>
+                    <input asp-for="Form.Model" class="form-control font-monospace" maxlength="100" autocapitalize="none" spellcheck="false" />
+                </div>
+                <div class="col-md-6">
+                    <label asp-for="Form.From" class="form-label">From (South African date)</label>
+                    <input asp-for="Form.From" type="date" class="form-control" />
+                </div>
+                <div class="col-4">
+                    <label asp-for="Form.Input" class="form-label">Input $</label>
+                    <input asp-for="Form.Input" class="form-control" inputmode="decimal" placeholder="0.30" />
+                </div>
+                <div class="col-4">
+                    <label asp-for="Form.Cached" class="form-label">Cached $</label>
+                    <input asp-for="Form.Cached" class="form-control" inputmode="decimal" placeholder="0.006" />
+                </div>
+                <div class="col-4">
+                    <label asp-for="Form.Output" class="form-label">Output $</label>
+                    <input asp-for="Form.Output" class="form-control" inputmode="decimal" placeholder="1.20" />
+                </div>
+            </div>
+            <h3 class="h6 mt-4">Off-peak (optional)</h3>
+            <p class="small text-body-secondary mb-2">Leave all three empty when the price is the same all day. With off-peak prices, the prices above are the peak prices.</p>
+            <div class="row g-3">
+                <div class="col-4">
+                    <label asp-for="Form.OffPeakInput" class="form-label">Input $</label>
+                    <input asp-for="Form.OffPeakInput" class="form-control" inputmode="decimal" placeholder="0.15" />
+                </div>
+                <div class="col-4">
+                    <label asp-for="Form.OffPeakCached" class="form-label">Cached $</label>
+                    <input asp-for="Form.OffPeakCached" class="form-control" inputmode="decimal" placeholder="0.003" />
+                </div>
+                <div class="col-4">
+                    <label asp-for="Form.OffPeakOutput" class="form-label">Output $</label>
+                    <input asp-for="Form.OffPeakOutput" class="form-control" inputmode="decimal" placeholder="0.60" />
+                </div>
+                <div class="col-md-8">
+                    <label asp-for="Form.PeakHours" class="form-label">Peak hours (UTC)</label>
+                    <input asp-for="Form.PeakHours" class="form-control font-monospace" placeholder="01:00-04:00,06:00-10:00" />
+                    <div class="form-text">UTC is 2 hours behind South African time: 01:00-04:00 UTC is 03:00-06:00 here.</div>
+                </div>
+                <div class="col-md-4">
+                    <label asp-for="Form.PeakDays" class="form-label">Peak days</label>
+                    <input asp-for="Form.PeakDays" class="form-control font-monospace" placeholder="Mon-Fri" />
+                </div>
+            </div>
+            <button type="submit" class="btn btn-tl mt-4">Add price</button>
+        </form>
+    </div>
+</section>

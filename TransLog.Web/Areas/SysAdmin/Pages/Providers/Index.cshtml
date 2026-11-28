@@ -1,0 +1,73 @@
+@page
+@model TransLog.Web.Areas.SysAdmin.Pages.Providers.IndexModel
+@using TransLog.Web.Ai
+@{
+    ViewData["Title"] = "AI providers";
+}
+
+<section class="tl-section">
+    <div class="container" style="max-width: 980px">
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-3">
+            <h1 class="tl-h2 mb-0">AI providers</h1>
+            <div class="d-flex flex-wrap gap-2">
+                <a class="btn btn-outline-secondary" href="/sysadmin/aihelp#providers">@Icons.Svg("question-circle") Help</a>
+                <a class="btn btn-tl" asp-page="Edit">@Icons.Svg("plus-lg") Add provider</a>
+            </div>
+        </div>
+
+        @if (TempData["Message"] is string message)
+        {
+            <div class="alert alert-success">@message</div>
+        }
+
+        <p class="text-body-secondary">
+            The AI that reads the slips. The global provider is set on <a asp-page="/Settings">Platform settings</a>;
+            a company can get another one on its company page. Only providers that are on and have a key can be chosen.
+        </p>
+
+        @foreach (var r in Model.Rows)
+        {
+            var p = r.Provider;
+            <div class="tl-card mb-3" data-provider="@p.Key">
+                <div class="d-flex flex-wrap justify-content-between align-items-start gap-2">
+                    <div>
+                        <h2 class="h5 mb-1"><a asp-page="Edit" asp-route-id="@p.Id">@p.Name</a></h2>
+                        <div class="small text-body-secondary"><code>@p.Key</code> · @p.Model · @p.BaseUrl</div>
+                    </div>
+                    <div class="d-flex flex-wrap gap-1">
+                        @if (p.Key == Model.GlobalKey)
+                        {
+                            <span class="badge text-bg-primary">Global</span>
+                        }
+                        @if (p.IsActive) { <span class="badge text-bg-success">On</span> } else { <span class="badge text-bg-secondary">Off</span> }
+                    </div>
+                </div>
+                <dl class="row small mt-3 mb-0">
+                    <dt class="col-sm-3">API key</dt>
+                    <dd class="col-sm-9" data-key-status>@r.KeyStatus</dd>
+                    <dt class="col-sm-3">Price now</dt>
+                    <dd class="col-sm-9">
+                        @if (r.Price is AiPrice price)
+                        {
+                            <span>@AiPricing.Usd(price.InputPerM) in · @AiPricing.Usd(price.CachedInputPerM) cached · @AiPricing.Usd(price.OutputPerM) out per 1M tokens</span>
+                            if (AiPricing.HasOffPeak(price))
+                            {
+                                <div class="text-body-secondary">Off-peak @AiPricing.Usd(price.OffPeakInputPerM) · @AiPricing.Usd(price.OffPeakCachedPerM) · @AiPricing.Usd(price.OffPeakOutputPerM); peak @price.PeakHoursUtc UTC @price.PeakDays</div>
+                            }
+                        }
+                        else
+                        {
+                            <span class="text-danger">No price for @p.Model: costs cannot be worked out.</span>
+                        }
+                        <div><a asp-page="Prices" asp-route-id="@p.Id">Prices and history</a></div>
+                    </dd>
+                    @if (r.Companies > 0)
+                    {
+                        <dt class="col-sm-3">Chosen by</dt>
+                        <dd class="col-sm-9">@r.Companies @(r.Companies == 1 ? "company" : "companies")</dd>
+                    }
+                </dl>
+            </div>
+        }
+    </div>
+</section>

@@ -79,11 +79,14 @@
                                 <li class="nav-item"><a class="nav-link tl-navlink @OnExact("/sysadmin") @On("/sysadmin/companies")" asp-area="SysAdmin" asp-page="/Index">@Icons.Svg("buildings") Companies</a></li>
                                 <li class="nav-item"><a class="nav-link tl-navlink @On("/sysadmin/admins")" asp-area="SysAdmin" asp-page="/Admins">@Icons.Svg("person-gear") TransLog admins</a></li>
                                 <li class="nav-item"><a class="nav-link tl-navlink @On("/sysadmin/audit")" asp-area="SysAdmin" asp-page="/Audit">@Icons.Svg("journal-text") Audit log</a></li>
-                                @* Part 5a1: AI pages grouped in one dropdown (5a2 adds AI providers, AI test, Platform settings). *@
+                                @* Part 5a1/5a2a: AI pages grouped in one dropdown (5a2b adds AI test). *@
                                 <li class="nav-item dropdown">
-                                    <a class="nav-link tl-navlink dropdown-toggle @On("/sysadmin/prompts") @On("/sysadmin/aihelp")" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">@Icons.Svg("cpu") AI</a>
+                                    <a class="nav-link tl-navlink dropdown-toggle @On("/sysadmin/prompts") @On("/sysadmin/providers") @On("/sysadmin/settings") @On("/sysadmin/aihelp")" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">@Icons.Svg("cpu") AI</a>
                                     <ul class="dropdown-menu dropdown-menu-end">
                                         <li><a class="dropdown-item tl-navlink @On("/sysadmin/prompts")" asp-area="SysAdmin" asp-page="/Prompts/Index">@Icons.Svg("chat-square-text") AI prompts</a></li>
+                                        <li><a class="dropdown-item tl-navlink @On("/sysadmin/providers")" asp-area="SysAdmin" asp-page="/Providers/Index">@Icons.Svg("cpu") AI providers</a></li>
+                                        <li><a class="dropdown-item tl-navlink @On("/sysadmin/settings")" asp-area="SysAdmin" asp-page="/Settings">@Icons.Svg("gear") Platform settings</a></li>
+                                        <li><hr class="dropdown-divider" /></li>
                                         <li><a class="dropdown-item tl-navlink @On("/sysadmin/aihelp")" asp-area="SysAdmin" asp-page="/AiHelp">@Icons.Svg("question-circle") AI help</a></li>
                                     </ul>
                                 </li>

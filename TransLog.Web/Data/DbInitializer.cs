@@ -31,6 +31,11 @@ public static class DbInitializer
         if (seeded > 0)
             logger.LogInformation("{Count} built-in AI prompt entries added.", seeded);
 
+        // Part 5a2a: the DeepSeek provider (no key), its price row and the platform settings, only when missing.
+        var aiSeeded = await TransLog.Web.Ai.AiSeeds.SeedAsync(db);
+        if (aiSeeded > 0)
+            logger.LogInformation("{Count} AI provider, price and setting rows added.", aiSeeded);
+
         var userManager = sp.GetRequiredService<UserManager<AppUser>>();
 
         // Part 3c: driver logins made before the Driver role existed were Capturers; move them over.
