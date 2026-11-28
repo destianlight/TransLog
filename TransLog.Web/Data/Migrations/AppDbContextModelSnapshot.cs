@@ -531,7 +531,16 @@ namespace TransLog.Web.Data.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
 
+                    b.Property<DateTime?>("RemovedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int?>("RemovedByUserId")
+                        .HasColumnType("int");
+
                     b.Property<int>("Status")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("StatusBeforeRemove")
                         .HasColumnType("int");
 
                     b.Property<int?>("SystemVersion")
@@ -577,6 +586,51 @@ namespace TransLog.Web.Data.Migrations
                     b.HasIndex("CompanyId", "VehicleId", "CapturedAt");
 
                     b.ToTable("Captures");
+                });
+
+            modelBuilder.Entity("TransLog.Web.Data.CaptureEdit", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("At")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("ByDriver")
+                        .HasColumnType("bit");
+
+                    b.Property<int>("CaptureId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("CompanyId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("FieldKey")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("nvarchar(40)");
+
+                    b.Property<string>("NewValue")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("OldValue")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.HasIndex("CompanyId", "CaptureId");
+
+                    b.ToTable("CaptureEdits");
                 });
 
             modelBuilder.Entity("TransLog.Web.Data.CaptureImage", b =>
@@ -804,6 +858,9 @@ namespace TransLog.Web.Data.Migrations
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
+
+                    b.Property<bool>("DriverEditsLocked")
+                        .HasColumnType("bit");
 
                     b.Property<int>("DriverLinking")
                         .HasColumnType("int");
@@ -1224,6 +1281,24 @@ namespace TransLog.Web.Data.Migrations
                     b.Navigation("Driver");
 
                     b.Navigation("Vehicle");
+                });
+
+            modelBuilder.Entity("TransLog.Web.Data.CaptureEdit", b =>
+                {
+                    b.HasOne("TransLog.Web.Data.AppUser", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("TransLog.Web.Data.Capture", "Capture")
+                        .WithMany()
+                        .HasForeignKey("CompanyId", "CaptureId")
+                        .HasPrincipalKey("CompanyId", "Id")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Capture");
                 });
 
             modelBuilder.Entity("TransLog.Web.Data.CaptureImage", b =>
