@@ -114,6 +114,9 @@ public class CaptureReader(AppDbContext db, SlipReader reader, IFileStore files,
         var photo = image is null ? null : await ReadFileAsync(image.FilePath, ct);
         if (photo is null)
         {
+            await KeepRemovedAsync(capture);
+            if (capture.Status == CaptureStatus.Removed)
+                return null;
             capture.Status = CaptureStatus.NeedsReview;
             capture.ErrorMessage = "Could not be read: the photo file is missing.";
             capture.AiLockedUntil = null;
@@ -125,9 +128,26 @@ public class CaptureReader(AppDbContext db, SlipReader reader, IFileStore files,
 
         var read = await reader.ReadAsync(capture.CompanyId, photo, null, ct);
         Apply(capture, read, DateTime.UtcNow);
+        await KeepRemovedAsync(capture);
         await db.SaveChangesAsync(CancellationToken.None);
         await NotifyAsync(capture, driverUserId, reading: false);
         return read.Outcome;
+    }
+
+    /// <summary>
+    /// Part 5b2: the slip may have been removed while it was being read. Then it stays removed (the read is kept, so a
+    /// restore brings it back as being checked) and the queue fields are cleared.
+    /// </summary>
+    private async Task KeepRemovedAsync(Capture capture)
+    {
+        var now = await db.Captures.IgnoreQueryFilters().Where(c => c.Id == capture.Id).Select(c => c.Status).FirstAsync(CancellationToken.None);
+        if (now != CaptureStatus.Removed)
+            return;
+        if (capture.Status != CaptureStatus.Processing)
+            capture.StatusBeforeRemove = capture.Status;
+        capture.Status = CaptureStatus.Removed;
+        capture.AiLockedUntil = null;
+        capture.AiNextTryAt = null;
     }
 
     private Task NotifyAsync(Capture c, int? driverUserId, bool reading) =>

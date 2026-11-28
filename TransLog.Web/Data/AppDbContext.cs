@@ -31,6 +31,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, CurrentCompany
 
     public DbSet<CaptureImage> CaptureImages => Set<CaptureImage>();
 
+    public DbSet<CaptureEdit> CaptureEdits => Set<CaptureEdit>();
+
     public DbSet<CaptureType> CaptureTypes => Set<CaptureType>();
 
     public DbSet<CaptureTypeCompany> CaptureTypeCompanies => Set<CaptureTypeCompany>();
@@ -170,6 +172,18 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, CurrentCompany
             e.HasIndex(i => new { i.CompanyId, i.Sha256 });
         });
 
+        // Part 5b2: changed values, one row per field per save.
+        b.Entity<CaptureEdit>(e =>
+        {
+            e.HasOne(x => x.Capture)
+                .WithMany()
+                .HasForeignKey(x => new { x.CompanyId, x.CaptureId })
+                .HasPrincipalKey(c => new { c.CompanyId, c.Id })
+                .OnDelete(DeleteBehavior.Restrict);
+            e.HasOne<AppUser>().WithMany().HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.Restrict);
+            e.HasIndex(x => new { x.CompanyId, x.CaptureId });
+        });
+
         // ---- AI prompts and capture types (Part 5a1) ----
         // Platform tables managed by SysAdmins: no tenant filter. Only one Global entry per key (the database checks it too).
         b.Entity<CaptureType>(e =>
@@ -232,6 +246,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, CurrentCompany
         b.Entity<DriverVehicleLink>().HasQueryFilter(l => l.CompanyId == CurrentCompanyId);
         b.Entity<Capture>().HasQueryFilter(c => c.CompanyId == CurrentCompanyId);
         b.Entity<CaptureImage>().HasQueryFilter(i => i.CompanyId == CurrentCompanyId);
+        b.Entity<CaptureEdit>().HasQueryFilter(x => x.CompanyId == CurrentCompanyId);
     }
 }
 

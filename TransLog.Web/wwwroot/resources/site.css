@@ -395,3 +395,7 @@ a.tl-avatar-link .tl-avatar-edit {
 }
 @keyframes tl-scan { from { transform: translateY(-100%); } to { transform: translateY(190%); } }
 @media (prefers-reduced-motion: reduce) { .tl-scan .tl-thumb::after { animation: none; transform: none; height: 100%; opacity: .5; } }
+.tl-progress-off li::before { background: var(--bs-secondary-bg) !important; }
+.tl-progress-off .tl-progress-label { color: var(--bs-secondary-color); }
+/* Part 5b2: the driver's slip page */
+.tl-slip-photo { max-height: 70vh; object-fit: contain; }

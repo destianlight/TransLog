@@ -30,7 +30,7 @@ public class SettingsModel(AppDbContext db, AuditLogger audit) : PageModel
             return Page();
 
         Form.CopyTo(company);
-        audit.Add("CompanySettingsUpdated", $"driver linking: {company.DriverLinking}", company.Id);
+        audit.Add("CompanySettingsUpdated", $"driver linking: {company.DriverLinking}, drivers correct values: {(company.DriverEditsLocked ? "no" : "yes")}", company.Id);
         await db.SaveChangesAsync();
 
         TempData["Message"] = "Settings saved.";

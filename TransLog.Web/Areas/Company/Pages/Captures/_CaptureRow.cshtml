@@ -5,6 +5,9 @@
 @{
     var r = Model;
     var css = "tl-card p-2 d-flex gap-3 align-items-center" + (r.Reading ? " tl-scan" : "");
+    var canRemove = ViewData["CanRemove"] is true;
+    var back = ViewData["Back"] as string ?? "";
+    var removed = r.Status == CaptureStatus.Removed;
 }
 <div class="@css" data-row="@r.CaptureId" data-status="@((int)r.Status)">
     @if (r.ImageId is int imageId)
@@ -57,6 +60,34 @@
                 </dl>
             </details>
         }
-        <partial name="_CaptureProgress" model="new CaptureProgress(r.CaptureId, r.Status, r.Reading)" />
+        @if (removed)
+        {
+            <div class="text-body-secondary">@Icons.Svg("trash") @("Removed" + (r.RemovedBy is null ? "" : " by " + r.RemovedBy) + (r.RemovedAt is DateTime ra ? " · " + AppCulture.ToSast(ra).ToString("yyyy-MM-dd HH:mm") : ""))</div>
+        }
+        else
+        {
+            <partial name="_CaptureProgress" model="new CaptureProgress(r.CaptureId, r.Status, r.Reading)" />
+        }
+        @* Part 5b2: soft delete and restore (Owner, Admin, Capturer). *@
+        @if (canRemove)
+        {
+            <div class="mt-1 text-end">
+                @if (removed)
+                {
+                    <form method="post" asp-page="/Captures/Index" asp-page-handler="Restore" asp-route-id="@r.CaptureId" class="d-inline">
+                        <input type="hidden" name="back" value="@back" />
+                        <button type="submit" class="btn btn-sm btn-outline-secondary">@Icons.Svg("arrow-counterclockwise") Restore</button>
+                    </form>
+                }
+                else
+                {
+                    <form method="post" asp-page="/Captures/Index" asp-page-handler="Remove" asp-route-id="@r.CaptureId" class="d-inline"
+                          onsubmit="return confirm('Remove this slip? Use this for a wrong photo or a slip sent twice. You can restore it under Removed.');">
+                        <input type="hidden" name="back" value="@back" />
+                        <button type="submit" class="btn btn-sm btn-outline-danger">@Icons.Svg("trash") Remove</button>
+                    </form>
+                }
+            </div>
+        }
     </div>
 </div>

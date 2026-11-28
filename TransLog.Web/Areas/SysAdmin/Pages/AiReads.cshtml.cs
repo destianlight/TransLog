@@ -128,6 +128,7 @@ public class AiReadsModel(AppDbContext db) : PageModel
         CaptureStatus.Approved => "Approved",
         CaptureStatus.Rejected => "Rejected",
         CaptureStatus.Failed => "Could not be read",
+        CaptureStatus.Removed => "Removed",
         _ => s.ToString(),
     };
 }

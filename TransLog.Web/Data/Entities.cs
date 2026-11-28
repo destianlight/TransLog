@@ -29,6 +29,9 @@ public class Company
     /// <summary>Who may link a driver to a vehicle (Part 3). Set by the Owner.</summary>
     public DriverLinking DriverLinking { get; set; } = DriverLinking.DriversAndCompany;
 
+    /// <summary>Part 5b2: true = drivers may not correct the values the AI read (default false: they may). Set by the Owner.</summary>
+    public bool DriverEditsLocked { get; set; }
+
     /// <summary>Part 5a2a: the AI provider for this company; empty = the global one (Platform settings). Set by SysAdmins only.</summary>
     public int? AiProviderId { get; set; }
 

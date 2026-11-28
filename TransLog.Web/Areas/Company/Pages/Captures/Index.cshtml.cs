@@ -15,7 +15,7 @@ namespace TransLog.Web.Areas.CompanyArea.Pages.Captures;
 /// and rows are fetched again one by one when a live message arrives.
 /// The tenant filter keeps it to this company.
 /// </summary>
-public class IndexModel(AppDbContext db) : PageModel
+public class IndexModel(AppDbContext db, CaptureActions actions) : PageModel
 {
     public const int PageSize = 25;
 
@@ -35,7 +35,18 @@ public class IndexModel(AppDbContext db) : PageModel
 
         /// <summary>Part 5b: the AI is reading it right now.</summary>
         public bool Reading { get; init; }
+
+        // Part 5b2: removed slips.
+        public DateTime? RemovedAt { get; init; }
+
+        public string? RemovedBy { get; init; }
     }
+
+    /// <summary>Part 5b2: Owner, Admin and Capturer may remove and restore slips (not Viewers).</summary>
+    public bool CanRemove => User.IsInRole(Roles.Owner) || User.IsInRole(Roles.Admin) || User.IsInRole(Roles.Capturer);
+
+    /// <summary>Part 5b2: the current filters as a query string ("?show=busy&amp;p=2"), to come back to after Remove or Restore.</summary>
+    public string Back { get; private set; } = "";
 
     public List<Row> Rows { get; private set; } = [];
 
@@ -61,23 +72,8 @@ public class IndexModel(AppDbContext db) : PageModel
 
     public async Task OnGetAsync(string? show, string? from, string? to, int? driverId, int? vehicleId, int p = 1)
     {
-        Show = CaptureProgress.ParseShow(show);
-        From = AppCulture.ParseDay(from);
-        To = AppCulture.ParseDay(to);
-        DriverId = driverId is > 0 ? driverId : null;
-        VehicleId = vehicleId is > 0 ? vehicleId : null;
-        PageNo = Math.Clamp(p, 1, 10_000);
-
-        var query = CaptureProgress.Filter(db.Captures.AsNoTracking(), Show);
-        // Part 5b: From and To are slip dates (photo date while a slip has none yet).
-        if (From is DateOnly f)
-            query = CaptureProgress.FromDay(query, f);
-        if (To is DateOnly t)
-            query = CaptureProgress.ToDay(query, t);
-        if (DriverId is int d)
-            query = query.Where(c => c.DriverId == d);
-        if (VehicleId is int v)
-            query = query.Where(c => c.VehicleId == v);
+        ReadFilters(show, from, to, driverId, vehicleId, p);
+        var query = ApplyFilters(db.Captures.AsNoTracking());
 
         // Newest photo first, so an old slip sent today is still on top.
         Rows = await RowsAsync(query
@@ -89,6 +85,40 @@ public class IndexModel(AppDbContext db) : PageModel
         if (HasNext)
             Rows.RemoveAt(Rows.Count - 1);
 
+        await LoadChoicesAsync();
+    }
+
+    private void ReadFilters(string? show, string? from, string? to, int? driverId, int? vehicleId, int p)
+    {
+        Show = CaptureProgress.ParseShow(show);
+        From = AppCulture.ParseDay(from);
+        To = AppCulture.ParseDay(to);
+        DriverId = driverId is > 0 ? driverId : null;
+        VehicleId = vehicleId is > 0 ? vehicleId : null;
+        PageNo = Math.Clamp(p, 1, 10_000);
+        var values = With(page: PageNo);
+        Back = values.Count == 0 ? "" : "?" + string.Join("&", values.Select(kv => Uri.EscapeDataString(kv.Key) + "=" + Uri.EscapeDataString(kv.Value)));
+        ViewData["CanRemove"] = CanRemove;
+        ViewData["Back"] = Back;
+    }
+
+    private IQueryable<Capture> ApplyFilters(IQueryable<Capture> captures)
+    {
+        var query = CaptureProgress.Filter(captures, Show);
+        // Part 5b: From and To are slip dates (photo date while a slip has none yet).
+        if (From is DateOnly f)
+            query = CaptureProgress.FromDay(query, f);
+        if (To is DateOnly t)
+            query = CaptureProgress.ToDay(query, t);
+        if (DriverId is int d)
+            query = query.Where(c => c.DriverId == d);
+        if (VehicleId is int v)
+            query = query.Where(c => c.VehicleId == v);
+        return query;
+    }
+
+    private async Task LoadChoicesAsync()
+    {
         DriverChoices = (await db.Drivers.AsNoTracking()
                 .OrderByDescending(x => x.IsActive).ThenBy(x => x.FirstName).ThenBy(x => x.Surname)
                 .Select(x => new { x.Id, Name = x.FirstName + " " + x.Surname, x.IsActive })
@@ -103,12 +133,38 @@ public class IndexModel(AppDbContext db) : PageModel
             .ToList();
     }
 
-    /// <summary>Part 5b: one row again, for the live update (page-capture-live.js). Other companies' slips are not found.</summary>
-    public async Task<IActionResult> OnGetRowAsync(int id)
+    /// <summary>
+    /// Part 5b: one row again, for the live update (page-capture-live.js). Other companies' slips are not found.
+    /// The page's filters come along (for Back); with <paramref name="match"/> (5b2, a new slip to put on top) the row is
+    /// only found when it fits those filters.
+    /// </summary>
+    public async Task<IActionResult> OnGetRowAsync(int id, bool match, string? show, string? from, string? to, int? driverId, int? vehicleId, int p = 1)
     {
-        var rows = await RowsAsync(db.Captures.AsNoTracking().Where(c => c.Id == id));
+        ReadFilters(show, from, to, driverId, vehicleId, p);
+        var query = match ? ApplyFilters(db.Captures.AsNoTracking()) : db.Captures.AsNoTracking();
+        var rows = await RowsAsync(query.Where(c => c.Id == id));
         return rows.Count == 0 ? NotFound() : Partial(RowView, rows[0]);
     }
+
+    /// <summary>Part 5b2: soft delete (a wrong photo, a duplicate). Also for approved or rejected slips.</summary>
+    public async Task<IActionResult> OnPostRemoveAsync(int id, string? back)
+    {
+        if (!CanRemove || await db.Captures.FirstOrDefaultAsync(c => c.Id == id) is not { } capture)
+            return NotFound();
+        await actions.RemoveAsync(capture, User.GetUserId()!.Value, byDriver: false);
+        return BackTo(back);
+    }
+
+    public async Task<IActionResult> OnPostRestoreAsync(int id, string? back)
+    {
+        if (!CanRemove || await db.Captures.FirstOrDefaultAsync(c => c.Id == id) is not { } capture)
+            return NotFound();
+        await actions.RestoreAsync(capture);
+        return BackTo(back);
+    }
+
+    private IActionResult BackTo(string? back) =>
+        LocalRedirect("/company/captures" + (back is { Length: > 1 } b && b[0] == '?' && !b.Contains('\\') ? b : ""));
 
     public const string RowView = "/Areas/Company/Pages/Captures/_CaptureRow.cshtml";
 
@@ -134,12 +190,14 @@ public class IndexModel(AppDbContext db) : PageModel
                 c.ErrorMessage,
                 c.DataJson,
                 Reading = c.Status == CaptureStatus.Processing && c.AiLockedUntil != null && c.AiLockedUntil > now,
+                c.RemovedAt,
+                c.RemovedByUserId,
             })
             .ToListAsync();
 
         // Users have no tenant filter, so only names of this company's users are looked up.
         var companyId = User.GetCompanyId();
-        var ids = rows.Select(r => r.CapturedByUserId).Distinct().ToList();
+        var ids = rows.Select(r => r.CapturedByUserId).Concat(rows.Where(r => r.RemovedByUserId != null).Select(r => r.RemovedByUserId!.Value)).Distinct().ToList();
         var names = await db.Users.AsNoTracking()
             .Where(u => ids.Contains(u.Id) && u.CompanyId == companyId)
             .ToDictionaryAsync(u => u.Id, u => u.FullName);
@@ -152,6 +210,8 @@ public class IndexModel(AppDbContext db) : PageModel
             Note = r.Status == CaptureStatus.NeedsReview ? r.ErrorMessage : null,
             Values = ValuesOf(r.FieldsJson, r.DataJson),
             Reading = r.Reading,
+            RemovedAt = r.RemovedAt,
+            RemovedBy = r.RemovedByUserId is int by && names.TryGetValue(by, out var rn) ? rn : null,
         }).ToList();
     }
 

@@ -17,12 +17,13 @@
         </div>
 
         @* Part 5b: shown by page-capture-live.js when new slips arrive while the list is open. *@
-        <div id="liveNew" class="alert alert-info py-2 px-3 small mb-2" data-live="/company/captures?handler=Row&amp;id=" hidden>
+        <div id="liveNew" class="alert alert-info py-2 px-3 small mb-2" data-live="/company/captures?handler=Row&amp;id="
+             data-insert="@(Model.PageNo == 1 && Model.Show != CaptureShow.Removed ? "1" : "0")" data-drop-removed="@(Model.Show == CaptureShow.Removed ? "0" : "1")" hidden>
             <a href="" class="alert-link"><span data-count>1 new slip</span> · Show</a>
         </div>
 
         <div class="tl-filters mb-2">
-            @foreach (var show in new[] { CaptureShow.All, CaptureShow.Busy, CaptureShow.Done })
+            @foreach (var show in new[] { CaptureShow.All, CaptureShow.Busy, CaptureShow.Done, CaptureShow.Removed })
             {
                 <a class="btn btn-sm @(Model.Show == show ? "btn-tl" : "btn-outline-secondary")" asp-page="/Captures/Index" asp-all-route-data="Model.With(show)">@show</a>
             }
@@ -64,20 +65,16 @@
             </div>
         </form>
 
-        @if (Model.Rows.Count == 0)
-        {
-            <div class="tl-card p-3 text-body-secondary">@(Model.Filtered || Model.PageNo > 1 ? "No captures for this choice." : "No captures yet.")</div>
-        }
-        else
-        {
-            <div class="d-flex flex-column gap-2">
-                @foreach (var r in Model.Rows)
-                {
-                    <partial name="_CaptureRow" model="r" />
-                }
-            </div>
+        @* Part 5b2: the list is always there, so new slips can be put on top by page-capture-live.js. *@
+        <div id="liveEmpty" class="tl-card p-3 text-body-secondary" hidden="@(Model.Rows.Count > 0)">@(Model.Filtered || Model.PageNo > 1 ? "No captures for this choice." : "No captures yet.")</div>
+        <div id="liveList" class="d-flex flex-column gap-2">
+            @foreach (var r in Model.Rows)
+            {
+                <partial name="_CaptureRow" model="r" />
+            }
+        </div>
 
-            @if (Model.PageNo > 1 || Model.HasNext)
+        @if (Model.PageNo > 1 || Model.HasNext)
             {
                 <nav class="d-flex justify-content-between align-items-center mt-3" aria-label="Pages">
                     @if (Model.PageNo > 1)
@@ -99,7 +96,6 @@
                     }
                 </nav>
             }
-        }
     </div>
 </section>
 

@@ -45,13 +45,10 @@ public class SlipsModel(AppDbContext db) : PageModel
 
     public async Task OnGetAsync(string? show, string? day, int take = PageSize)
     {
-        Show = CaptureProgress.ParseShow(show);
-        Day = AppCulture.ParseDay(day);
+        ReadFilters(show, day);
         Take = Math.Clamp(take / PageSize * PageSize, PageSize, 20 * PageSize);
 
-        var query = CaptureProgress.Filter(Mine(), Show);
-        if (Day is DateOnly d)
-            query = CaptureProgress.OnDay(query, d);
+        var query = ApplyFilters(Mine());
 
         Slips = await RowsAsync(query
             .OrderByDescending(c => c.CapturedAt).ThenByDescending(c => c.Id)
@@ -62,11 +59,33 @@ public class SlipsModel(AppDbContext db) : PageModel
             Slips.RemoveAt(Slips.Count - 1);
     }
 
-    /// <summary>Part 5b: one row again, for the live update. Only the driver's own slips.</summary>
-    public async Task<IActionResult> OnGetRowAsync(int id)
+    /// <summary>
+    /// Part 5b: one row again, for the live update. Only the driver's own slips. Part 5b2: with <paramref name="match"/>
+    /// (a new slip to put on top) only when it fits the page's filters; removed slips never.
+    /// </summary>
+    public async Task<IActionResult> OnGetRowAsync(int id, bool match, string? show, string? day)
     {
-        var rows = await RowsAsync(Mine().Where(c => c.Id == id));
+        ReadFilters(show, day);
+        var query = match ? ApplyFilters(Mine()) : Mine();
+        var rows = await RowsAsync(query.Where(c => c.Id == id));
         return rows.Count == 0 ? NotFound() : Partial(RowView, rows[0]);
+    }
+
+    private void ReadFilters(string? show, string? day)
+    {
+        Show = CaptureProgress.ParseShow(show);
+        if (Show == CaptureShow.Removed)
+            Show = CaptureShow.All; // drivers do not see removed slips
+        Day = AppCulture.ParseDay(day);
+    }
+
+    /// <summary>All, Busy and Done leave removed slips out; one day by the slip date (photo date until read).</summary>
+    private IQueryable<Capture> ApplyFilters(IQueryable<Capture> query)
+    {
+        query = CaptureProgress.Filter(query, Show);
+        if (Day is DateOnly d)
+            query = CaptureProgress.OnDay(query, d);
+        return query;
     }
 
     /// <summary>Slips this driver sent or that are his (the tenant filter keeps it inside his company).</summary>

@@ -23,7 +23,11 @@
         </div>
 
         @* Part 5b: shown by page-capture-live.js when new slips arrive while the list is open. *@
-        <div id="liveNew" class="alert alert-info py-2 px-3 small mb-3" data-live="/driver/slips?handler=Row&amp;id=" hidden>
+        @if (TempData["Message"] is string message)
+        {
+            <div class="alert alert-success">@message</div>
+        }
+        <div id="liveNew" class="alert alert-info py-2 px-3 small mb-3" data-live="/driver/slips?handler=Row&amp;id=" data-insert="1" data-drop-removed="1" hidden>
             <a href="" class="alert-link"><span data-count>1 new slip</span> · Show</a>
         </div>
 
@@ -45,24 +49,19 @@
             }
         </form>
 
-        @if (Model.Slips.Count == 0)
-        {
-            <div class="tl-card p-3 text-body-secondary">@(Model.Filtered ? "No slips for this choice." : "No slips sent yet.")</div>
-        }
-        else
-        {
-            <div class="d-flex flex-column gap-2">
-                @foreach (var s in Model.Slips)
-                {
-                    <partial name="_SlipRow" model="s" />
-                }
-            </div>
-            @if (Model.HasMore)
+        @* Part 5b2: the list is always there, so new slips can be put on top by page-capture-live.js. *@
+        <div id="liveEmpty" class="tl-card p-3 text-body-secondary" hidden="@(Model.Slips.Count > 0)">@(Model.Filtered ? "No slips for this choice." : "No slips sent yet.")</div>
+        <div id="liveList" class="d-flex flex-column gap-2">
+            @foreach (var s in Model.Slips)
             {
-                <div class="text-center mt-3">
-                    <a class="btn btn-outline-secondary" asp-page="/Slips" asp-all-route-data="Model.With(take: Model.Take + SlipsModel.PageSize)">Show @SlipsModel.PageSize more</a>
-                </div>
+                <partial name="_SlipRow" model="s" />
             }
+        </div>
+        @if (Model.HasMore)
+        {
+            <div class="text-center mt-3">
+                <a class="btn btn-outline-secondary" asp-page="/Slips" asp-all-route-data="Model.With(take: Model.Take + SlipsModel.PageSize)">Show @SlipsModel.PageSize more</a>
+            </div>
         }
     </div>
 </section>

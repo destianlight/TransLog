@@ -146,6 +146,8 @@ builder.Services.AddHostedService<TransLog.Web.Ai.AiWorker>();
 // Part 5b: live slip updates (SignalR) on My slips and the Captures list.
 builder.Services.AddSignalR();
 builder.Services.AddSingleton<CaptureLive>();
+// Part 5b2: remove, restore and correct values.
+builder.Services.AddScoped<CaptureActions>();
 
 builder.Services.Configure<RequestLocalizationOptions>(o =>
 {

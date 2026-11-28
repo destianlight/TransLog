@@ -8,6 +8,9 @@ public enum CaptureShow
     All,
     Busy,
     Done,
+
+    /// <summary>Part 5b2: only removed slips (office Captures list).</summary>
+    Removed,
 }
 
 /// <summary>
@@ -38,6 +41,7 @@ public sealed record CaptureProgress(int CaptureId, CaptureStatus Status, bool R
     {
         CaptureStatus.Approved => "ok",
         CaptureStatus.Rejected or CaptureStatus.Failed => "bad",
+        CaptureStatus.Removed => "off",
         _ => "",
     };
 
@@ -49,6 +53,7 @@ public sealed record CaptureProgress(int CaptureId, CaptureStatus Status, bool R
         CaptureStatus.Approved => "Approved",
         CaptureStatus.Rejected => "Rejected",
         CaptureStatus.Failed => "Could not be read",
+        CaptureStatus.Removed => "Removed",
         _ => "",
     };
 
@@ -57,6 +62,7 @@ public sealed record CaptureProgress(int CaptureId, CaptureStatus Status, bool R
     {
         "busy" => CaptureShow.Busy,
         "done" => CaptureShow.Done,
+        "removed" => CaptureShow.Removed,
         _ => CaptureShow.All,
     };
 
@@ -81,6 +87,7 @@ public sealed record CaptureProgress(int CaptureId, CaptureStatus Status, bool R
     {
         CaptureShow.Busy => query.Where(c => Busy.Contains(c.Status)),
         CaptureShow.Done => query.Where(c => Done.Contains(c.Status)),
-        _ => query,
+        CaptureShow.Removed => query.Where(c => c.Status == CaptureStatus.Removed),
+        _ => query.Where(c => c.Status != CaptureStatus.Removed), // Part 5b2: All leaves removed slips out
     };
 }

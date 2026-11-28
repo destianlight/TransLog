@@ -64,6 +64,18 @@
                 </div>
             </fieldset>
 
+            @* Part 5b2 *@
+            <fieldset class="mb-4">
+                <legend class="h6">Slips</legend>
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" asp-for="Form.DriversMayEditValues" />
+                    <label class="form-check-label" asp-for="Form.DriversMayEditValues">
+                        Drivers may correct values
+                        <span class="d-block small text-body-secondary">On his slip page a driver can fix what the AI read while the slip is being checked. Every change is kept and shown as changed by the driver.</span>
+                    </label>
+                </div>
+            </fieldset>
+
             <button type="submit" class="btn btn-tl">Save</button>
         </form>
     </div>

@@ -24,6 +24,9 @@ public class CompanySettingsForm
 
     public DriverLinking DriverLinking { get; set; }
 
+    /// <summary>Part 5b2: drivers may correct the values the AI read on their slip page.</summary>
+    public bool DriversMayEditValues { get; set; } = true;
+
     public static CompanySettingsForm From(Company c) => new()
     {
         RegistrationNo = c.RegistrationNo,
@@ -32,6 +35,7 @@ public class CompanySettingsForm
         Phone = c.Phone,
         Address = c.Address,
         DriverLinking = c.DriverLinking,
+        DriversMayEditValues = !c.DriverEditsLocked,
     };
 
     public void CopyTo(Company c)
@@ -42,5 +46,6 @@ public class CompanySettingsForm
         c.Phone = Phone?.Trim();
         c.Address = Address?.Trim();
         c.DriverLinking = Enum.IsDefined(DriverLinking) ? DriverLinking : DriverLinking.DriversAndCompany;
+        c.DriverEditsLocked = !DriversMayEditValues;
     }
 }

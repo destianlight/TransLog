@@ -14,6 +14,10 @@ public enum CaptureStatus
     Approved = 3,
     Rejected = 4,
     Failed = 5,
+
+    /// <summary>Part 5b2: removed by the driver or the office (a mistake, wrong photo, duplicate). Never read, never counted;
+    /// the photo stays. The office can restore it.</summary>
+    Removed = 6,
 }
 
 /// <summary>How a photo got into TransLog. Stored as a number; never reorder.</summary>
@@ -162,6 +166,48 @@ public class Capture
 
     /// <summary>Taken by a worker until this time (UTC); a read that stopped half way is picked up again after it.</summary>
     public DateTime? AiLockedUntil { get; set; }
+
+    // ---- Part 5b2: soft delete ----
+
+    /// <summary>When it was removed (UTC); null when not removed.</summary>
+    public DateTime? RemovedAt { get; set; }
+
+    public int? RemovedByUserId { get; set; }
+
+    /// <summary>The status before it was removed; Restore puts it back.</summary>
+    public CaptureStatus? StatusBeforeRemove { get; set; }
+}
+
+/// <summary>
+/// Part 5b2: one changed value on a capture (by the driver on his slip page, later by the reviewer). One row per field
+/// per save, never edited. AiRawJson keeps the AI's answer; the first OldValue of a field is what the AI read.
+/// </summary>
+public class CaptureEdit
+{
+    public int Id { get; set; }
+
+    public int CompanyId { get; set; }
+
+    public int CaptureId { get; set; }
+
+    public Capture? Capture { get; set; }
+
+    [MaxLength(40)]
+    public string FieldKey { get; set; } = "";
+
+    [MaxLength(500)]
+    public string? OldValue { get; set; }
+
+    [MaxLength(500)]
+    public string? NewValue { get; set; }
+
+    public int UserId { get; set; }
+
+    /// <summary>True when the driver changed it (shown as "changed by the driver").</summary>
+    public bool ByDriver { get; set; }
+
+    /// <summary>UTC.</summary>
+    public DateTime At { get; set; }
 }
 
 /// <summary>

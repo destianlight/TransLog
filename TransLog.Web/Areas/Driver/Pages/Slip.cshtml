@@ -1,0 +1,143 @@
+@page "/driver/slips/{id:int}"
+@model SlipModel
+@using TransLog.Web.Captures
+@{
+    ViewData["Title"] = "Slip";
+    var s = Model.Slip;
+    var inv = System.Globalization.CultureInfo.InvariantCulture;
+}
+
+<section class="tl-section pt-4">
+    <div class="container" style="max-width: 720px">
+        <div class="d-flex align-items-center gap-2 mb-3">
+            <a class="btn btn-sm btn-outline-secondary" asp-page="/Slips" >&larr; My slips</a>
+            <h1 class="tl-h2 mb-0 ms-2 me-auto">@(Model.TypeName ?? "Slip")</h1>
+        </div>
+
+        @if (TempData["Message"] is string message)
+        {
+            <div class="alert alert-success">@message</div>
+        }
+        @if (Model.Errors.Count > 0)
+        {
+            <div class="alert alert-danger">
+                @foreach (var e in Model.Errors)
+                {
+                    <div>@e</div>
+                }
+            </div>
+        }
+
+        @if (s.Status == CaptureStatus.Removed)
+        {
+            <div class="tl-card p-3 text-body-secondary">This slip was removed.</div>
+        }
+        else
+        {
+            <div class="tl-card p-2 mb-3">
+                @if (Model.ImageId is int imageId)
+                {
+                    @* Opens the full photo; pinch to zoom. *@
+                    <a href="/files/capture/@imageId" target="_blank" class="d-block text-center">
+                        <img src="/files/capture/@imageId" alt="Slip photo" class="img-fluid rounded tl-slip-photo" />
+                    </a>
+                    <div class="small text-body-secondary text-center mt-1">Tap the photo to open it full size.</div>
+                }
+                <div class="small mt-2 px-1">
+                    @if (s.EventDate is DateOnly ed)
+                    {
+                        <div class="fw-semibold">@("Slip " + ed.ToString("yyyy-MM-dd", inv))</div>
+                    }
+                    <div class="text-body-secondary">@("Photo " + AppCulture.ToSast(s.CapturedAt).ToString("yyyy-MM-dd HH:mm")) · @(Model.Vehicle ?? "No vehicle")</div>
+                    <partial name="_CaptureProgress" model="new CaptureProgress(s.Id, s.Status)" />
+                </div>
+            </div>
+
+            if (s.Status is CaptureStatus.Uploading or CaptureStatus.Processing)
+            {
+                <div class="tl-card p-3 mb-3 text-body-secondary">Being read. Check back in a moment.</div>
+            }
+            else if (s.CaptureTypeId is null)
+            {
+                <div class="tl-card p-3 mb-3 text-body-secondary">The office will check this slip.</div>
+            }
+            else if (Model.CanEdit)
+            {
+                <form method="post" asp-page-handler="Save" asp-route-id="@s.Id" class="tl-card p-3 mb-3">
+                    <h2 class="h6">What the AI read</h2>
+                    <p class="small text-body-secondary">Fix anything that is wrong and tap Save. Leave a box empty when it is not on the slip.</p>
+                    @foreach (var f in Model.Fields)
+                    {
+                        var name = "v." + f.Field.Key;
+                        var boxId = "v_" + f.Field.Key;
+                        <div class="mb-2">
+                            <label class="form-label small mb-1" for="@boxId">
+                                @(f.Field.Label + (f.Field.Unit is { Length: > 0 } u ? " (" + u + ")" : ""))
+                                @if (f.ChangedByDriver)
+                                {
+                                    <span class="badge text-bg-warning ms-1">changed by you</span>
+                                }
+                            </label>
+                            @if (f.Field.Type == "yesno")
+                            {
+                                <select id="@boxId" name="@name" class="form-select form-select-sm">
+                                    <option value="" selected="@(f.Value is null)">–</option>
+                                    <option value="yes" selected="@(f.Value == "yes")">Yes</option>
+                                    <option value="no" selected="@(f.Value == "no")">No</option>
+                                </select>
+                            }
+                            else if (f.Field.Type == "date")
+                            {
+                                <input id="@boxId" name="@name" type="date" class="form-control form-control-sm"
+                                       value="@(SlipReaderDate(f.Value))" />
+                            }
+                            else if (f.Field.Type is "number" or "money")
+                            {
+                                <input id="@boxId" name="@name" type="text" inputmode="decimal" class="form-control form-control-sm" value="@f.Value" />
+                            }
+                            else
+                            {
+                                <input id="@boxId" name="@name" type="text" maxlength="@CaptureActions.MaxValue" class="form-control form-control-sm" value="@f.Value" />
+                            }
+                            @if (f.ChangedByDriver || f.ChangedByOffice)
+                            {
+                                <div class="small text-body-secondary">@("AI read: " + (f.AiValue ?? "nothing"))</div>
+                            }
+                        </div>
+                    }
+                    <button type="submit" class="btn btn-tl mt-2">Save</button>
+                </form>
+            }
+            else
+            {
+                <div class="tl-card p-3 mb-3">
+                    <h2 class="h6">What the AI read</h2>
+                    @if (Model.EditsLocked && s.Status == CaptureStatus.NeedsReview)
+                    {
+                        <p class="small text-body-secondary">Your company checks the values. Tell the office if something is wrong.</p>
+                    }
+                    <dl class="row small mb-0">
+                        @foreach (var f in Model.Fields.Where(x => !string.IsNullOrWhiteSpace(x.Value)))
+                        {
+                            <dt class="col-5 fw-normal text-body-secondary">@f.Field.Label</dt>
+                            <dd class="col-7 mb-1 font-monospace text-break">@f.Value</dd>
+                        }
+                    </dl>
+                </div>
+            }
+
+            if (Model.CanRemove)
+            {
+                <form method="post" asp-page-handler="Remove" asp-route-id="@s.Id" onsubmit="return confirm('Remove this slip? Use this for a wrong photo or a slip sent twice.');">
+                    <button type="submit" class="btn btn-outline-danger">@Icons.Svg("trash") Remove this slip</button>
+                </form>
+            }
+        }
+    </div>
+</section>
+
+@functions {
+    /// <summary>The value for a date box (yyyy-MM-dd), or empty when it is not a date.</summary>
+    private static string SlipReaderDate(string? value) =>
+        TransLog.Web.Ai.SlipReader.Date(value) is DateOnly d ? d.ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture) : "";
+}
