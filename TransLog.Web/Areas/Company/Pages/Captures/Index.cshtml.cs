@@ -18,7 +18,19 @@ public class IndexModel(AppDbContext db) : PageModel
     public const int PageSize = 25;
 
     public record Row(int CaptureId, int? ImageId, DateTime CapturedAt, string? Driver, string? Vehicle, CaptureStatus Status,
-        ImageSource? Source, bool HasLocation, string By);
+        ImageSource? Source, bool HasLocation, string By)
+    {
+        // Part 5a2b2: what the AI read.
+        public string? TypeName { get; init; }
+
+        public DateOnly? EventDate { get; init; }
+
+        /// <summary>Why it needs a look ("Type not sure", "Could not be read: …"); only shown while being checked.</summary>
+        public string? Note { get; init; }
+
+        /// <summary>The values read, as (label, value), only those with a value, in the type's field order.</summary>
+        public List<(string Label, string Value)> Values { get; init; } = [];
+    }
 
     public List<Row> Rows { get; private set; } = [];
 
@@ -82,6 +94,11 @@ public class IndexModel(AppDbContext db) : PageModel
                 Source = c.Images.OrderBy(i => i.SortOrder).Select(i => (ImageSource?)i.Source).FirstOrDefault(),
                 HasLocation = c.Images.Any(i => i.Latitude != null),
                 c.CapturedByUserId,
+                TypeName = c.CaptureType != null ? c.CaptureType.Name : null,
+                FieldsJson = c.CaptureType != null ? c.CaptureType.FieldsJson : null,
+                c.EventDate,
+                c.ErrorMessage,
+                c.DataJson,
             })
             .ToListAsync();
 
@@ -97,7 +114,13 @@ public class IndexModel(AppDbContext db) : PageModel
             .ToDictionaryAsync(u => u.Id, u => u.FullName);
 
         Rows = rows.Select(r => new Row(r.Id, r.ImageId, r.CapturedAt, r.Driver, r.Vehicle, r.Status, r.Source, r.HasLocation,
-            names.TryGetValue(r.CapturedByUserId, out var n) ? n : "")).ToList();
+            names.TryGetValue(r.CapturedByUserId, out var n) ? n : "")
+        {
+            TypeName = r.TypeName,
+            EventDate = r.EventDate,
+            Note = r.Status == CaptureStatus.NeedsReview ? r.ErrorMessage : null,
+            Values = ValuesOf(r.FieldsJson, r.DataJson),
+        }).ToList();
 
         DriverChoices = (await db.Drivers.AsNoTracking()
                 .OrderByDescending(x => x.IsActive).ThenBy(x => x.FirstName).ThenBy(x => x.Surname)
@@ -131,6 +154,18 @@ public class IndexModel(AppDbContext db) : PageModel
         if (page is > 1)
             values["p"] = page.Value.ToString(CultureInfo.InvariantCulture);
         return values;
+    }
+
+    /// <summary>Part 5a2b2: the read values with the type's labels (keys the type no longer has keep their key).</summary>
+    public static List<(string Label, string Value)> ValuesOf(string? fieldsJson, string? dataJson)
+    {
+        var data = TransLog.Web.Ai.CaptureReader.ReadDataJson(dataJson);
+        if (data.Count == 0)
+            return [];
+        var labels = TransLog.Web.Ai.PromptRules.FieldsFromJson(fieldsJson).ToDictionary(f => f.Key, f => f.Label);
+        return data.Where(kv => !string.IsNullOrWhiteSpace(kv.Value))
+            .Select(kv => (labels.TryGetValue(kv.Key, out var label) ? label : kv.Key, kv.Value!))
+            .ToList();
     }
 
     public static string Day(DateOnly d) => d.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);

@@ -1,5 +1,5 @@
 @page
-@* Help for SysAdmins on the AI pages: prompts (5a1), providers, prices and settings (5a2a), AI test (5a2b1). *@
+@* Help for SysAdmins on the AI pages: prompts (5a1), providers, prices and settings (5a2a), AI test (5a2b1), AI reads (5a2b2). *@
 @{
     ViewData["Title"] = "AI help";
 }
@@ -27,6 +27,7 @@
                 <li><a href="#prices">Prices and cost</a></li>
                 <li><a href="#settings">Platform settings</a></li>
                 <li><a href="#aitest">AI test</a></li>
+                <li><a href="#aireads">Automatic reading and AI reads</a></li>
                 <li><a href="#later">What comes later</a></li>
             </ol>
         </nav>
@@ -38,7 +39,7 @@
             <li><strong>Step 2, read:</strong> the chosen <strong>capture type's prompt</strong> asks for that type's fields and gets them back as json.</li>
         </ol>
         <p>If step 1 says "other" or is not sure, the slip goes to review and the reviewer picks the type. The AI only fills in the data: TransLog's own checks and the reviewer decide whether it is right.</p>
-        <div class="alert alert-info small">Since Part 5a2b1 you can try any photo on the <a href="/sysadmin/aitest">AI test</a> page. Slips that drivers and the office send are read automatically from Part 5a2b2; until then they wait as "Waiting to be read".</div>
+        <div class="alert alert-info small">Every slip that drivers and the office send is read automatically in the background (see <a href="#aireads">section 15</a>). You can also try any photo on the <a href="/sysadmin/aitest">AI test</a> page.</div>
 
         <h2 id="kinds" class="h4 mt-5">2. The three kinds of entry</h2>
         <div class="table-responsive">
@@ -257,9 +258,20 @@ Answer in json exactly in this shape …
             <li>After changing a prompt, run the same photo again: the versions used are shown under the result.</li>
         </ul>
 
-        <h2 id="later" class="h4 mt-5">15. What comes later</h2>
+        <h2 id="aireads" class="h4 mt-5">15. Automatic reading and AI reads</h2>
+        <p>Every slip that a driver or the office sends is read by a worker inside the web app. It starts as soon as the photo arrives, also looks every 30 seconds and when the site starts (a slip sent while the site sleeps is read when it wakes). Two slips are read at a time, with the company's prompts and AI provider.</p>
+        <ul>
+            <li><strong>Read:</strong> the slip goes to <em>Being checked</em> with its type, slip date, values, the prompt versions used, tokens and cost in rand. Nothing is approved automatically.</li>
+            <li><strong>Type not sure</strong> or <strong>Could not be read</strong> (a bad answer twice): also <em>Being checked</em>, with that note on the Captures list.</li>
+            <li><strong>Provider problem</strong> (no answer, key refused, no balance, too many requests): the slip keeps <em>Waiting to be read</em> and is tried again after 2, 10 and 30 minutes; after the 4th problem it goes to Being checked as Could not be read.</li>
+            <li><strong>No provider</strong> (switched off or no key): the slip keeps waiting and is looked at every 5 minutes, so it is read as soon as a key works.</li>
+        </ul>
+        <p>The company sees the type, slip date and a fold-out <em>What the AI read</em> on its <strong>Captures</strong> list. AI ▾ › <strong>AI reads</strong> shows you the last 50 reads across all companies (or one company): time, type, seconds, cost, prompt versions, any note and both raw answers, plus what is still waiting with its next try, and the count and cost for the last 24 hours and 30 days. Photos are not shown there.</p>
+
+        <h2 id="later" class="h4 mt-5">16. What comes later</h2>
         <ul class="small">
-            <li><strong>5a2b2:</strong> every slip that drivers and the office send is read automatically in the background (started on upload, checked every 30 s and at startup), with the type, slip date, values, prompt versions and cost in rand stored on the slip; an AI reads page lists recent reads.</li>
+            <li><strong>5b:</strong> the progress bar moves without a refresh (SignalR), and the lists show and filter by the slip date.</li>
+            <li><strong>5c:</strong> validation rules (litres × price = total, gross − tare = net, known registrations, duplicates …).</li>
             <li><strong>5d:</strong> "Check provider" finds new prices on the provider's own site for you to approve, and "Get rate" fetches the dollar rate.</li>
             <li><strong>Part 7:</strong> the full type editor (choice lists, vehicle and driver pickers), companies' own types, and photo checks such as "Is an open diesel cap visible?".</li>
         </ul>

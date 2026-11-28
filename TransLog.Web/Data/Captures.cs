@@ -77,6 +77,91 @@ public class Capture
     public CaptureStatus Status { get; set; } = CaptureStatus.Processing;
 
     public List<CaptureImage> Images { get; set; } = [];
+
+    // ---- Part 5a2b2: what the AI read (filled by the background worker) ----
+
+    /// <summary>The detected type (null until read, or when the type was not sure).</summary>
+    public int? CaptureTypeId { get; set; }
+
+    public CaptureType? CaptureType { get; set; }
+
+    /// <summary>Step 1's confidence in the type: high, medium or low.</summary>
+    [MaxLength(10)]
+    public string? TypeConfidence { get; set; }
+
+    /// <summary>Slip date: the transaction date printed on the slip (South African date, no time zone).</summary>
+    public DateOnly? EventDate { get; set; }
+
+    // Core fields; each type relabels them (Quantity is litres on a fuel slip, net kg on a weighbridge ticket).
+    public decimal? Amount { get; set; }
+
+    public decimal? Quantity { get; set; }
+
+    public decimal? Odometer { get; set; }
+
+    [MaxLength(100)]
+    public string? ReferenceNo { get; set; }
+
+    [MaxLength(200)]
+    public string? Vendor { get; set; }
+
+    /// <summary>Step 1's answer as received.</summary>
+    public string? DetectRawJson { get; set; }
+
+    /// <summary>Step 2's answer as received; never edited (compared with DataJson later for accuracy).</summary>
+    public string? AiRawJson { get; set; }
+
+    /// <summary>The values as {"key": "value"}: starts as the AI's values, edited by the reviewer (Part 6).</summary>
+    public string? DataJson { get; set; }
+
+    /// <summary>Why the slip needs a look ("Type not sure", "Could not be read: …") or why it still waits.</summary>
+    [MaxLength(500)]
+    public string? ErrorMessage { get; set; }
+
+    // Prompt versions used.
+    public int? SystemVersion { get; set; }
+
+    public int? DetectVersion { get; set; }
+
+    public int? TypeVersion { get; set; }
+
+    // Provider, tokens and cost (estimates from the tokens the AI reports).
+    public int? AiProviderId { get; set; }
+
+    [MaxLength(100)]
+    public string? AiModel { get; set; }
+
+    public int? AiInputTokens { get; set; }
+
+    public int? AiCachedTokens { get; set; }
+
+    public int? AiOutputTokens { get; set; }
+
+    public int? AiPriceId { get; set; }
+
+    public bool? AiPeak { get; set; }
+
+    public decimal? AiCostUsd { get; set; }
+
+    public decimal? AiUsdToZar { get; set; }
+
+    public decimal? AiCostZar { get; set; }
+
+    /// <summary>When the AI finished (UTC) and how long the whole read took.</summary>
+    public DateTime? AiReadAt { get; set; }
+
+    public int? AiMilliseconds { get; set; }
+
+    // The queue: a capture with Status Processing is waiting to be read (no separate job table).
+
+    /// <summary>Reads that ended in a provider problem (no answer, 429, 5xx …); after 4 the slip goes to review.</summary>
+    public int AiAttempts { get; set; }
+
+    /// <summary>Not read again before this time (UTC); null = as soon as possible.</summary>
+    public DateTime? AiNextTryAt { get; set; }
+
+    /// <summary>Taken by a worker until this time (UTC); a read that stopped half way is picked up again after it.</summary>
+    public DateTime? AiLockedUntil { get; set; }
 }
 
 /// <summary>

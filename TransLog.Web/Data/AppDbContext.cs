@@ -141,6 +141,20 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, CurrentCompany
             e.HasIndex(c => new { c.CompanyId, c.CapturedAt });
             e.HasIndex(c => new { c.CompanyId, c.DriverId, c.CapturedAt });
             e.HasIndex(c => new { c.CompanyId, c.VehicleId, c.CapturedAt });
+
+            // Part 5a2b2: what the AI read, and the queue (Status Processing = waiting to be read).
+            e.HasOne(c => c.CaptureType).WithMany().HasForeignKey(c => c.CaptureTypeId).OnDelete(DeleteBehavior.Restrict);
+            e.HasOne<AiProvider>().WithMany().HasForeignKey(c => c.AiProviderId).OnDelete(DeleteBehavior.Restrict);
+            e.HasOne<AiPrice>().WithMany().HasForeignKey(c => c.AiPriceId).OnDelete(DeleteBehavior.Restrict);
+            e.Property(c => c.Amount).HasPrecision(18, 2);
+            e.Property(c => c.Quantity).HasPrecision(18, 3);
+            e.Property(c => c.Odometer).HasPrecision(12, 1);
+            e.Property(c => c.AiCostUsd).HasPrecision(12, 6);
+            e.Property(c => c.AiUsdToZar).HasPrecision(10, 4);
+            e.Property(c => c.AiCostZar).HasPrecision(12, 4);
+            e.HasIndex(c => new { c.CompanyId, c.EventDate });
+            e.HasIndex(c => new { c.Status, c.AiNextTryAt });
+            e.HasIndex(c => c.AiReadAt);
         });
 
         b.Entity<CaptureImage>(e =>

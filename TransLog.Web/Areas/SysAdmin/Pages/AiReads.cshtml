@@ -1,0 +1,92 @@
+@page
+@model TransLog.Web.Areas.SysAdmin.Pages.AiReadsModel
+@using TransLog.Web.Ai
+@using TransLog.Web.Areas.SysAdmin.Pages
+@{
+    ViewData["Title"] = "AI reads";
+}
+
+<section class="tl-section">
+    <div class="container" style="max-width: 960px">
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-3">
+            <h1 class="tl-h2 mb-0">AI reads</h1>
+            <a class="btn btn-outline-secondary" href="/sysadmin/aihelp#aireads">@Icons.Svg("question-circle") Help</a>
+        </div>
+        <p class="text-body-secondary">The slips the background worker read, newest first, across all companies. Photos are not shown here.</p>
+
+        <form method="get" class="d-flex gap-2 mb-3">
+            <select name="companyId" class="form-select form-select-sm" style="max-width: 20rem" asp-items="Model.CompanyChoices" onchange="this.form.submit()">
+                <option value="">All companies</option>
+            </select>
+            <noscript><button type="submit" class="btn btn-sm btn-tl">Show</button></noscript>
+        </form>
+
+        <div class="row g-2 mb-4">
+            <div class="col-4"><div class="tl-card p-2 text-center"><div class="small text-body-secondary">Waiting</div><div class="fs-5 fw-semibold" data-ai-waiting>@Model.WaitingCount</div></div></div>
+            <div class="col-4"><div class="tl-card p-2 text-center"><div class="small text-body-secondary">Last 24 hours</div><div class="fs-5 fw-semibold">@Model.LastDay.Count</div><div class="small">@AiPricing.Rand(Model.LastDay.Zar)</div></div></div>
+            <div class="col-4"><div class="tl-card p-2 text-center"><div class="small text-body-secondary">Last 30 days</div><div class="fs-5 fw-semibold">@Model.Last30Days.Count</div><div class="small">@AiPricing.Rand(Model.Last30Days.Zar)</div></div></div>
+        </div>
+
+        @if (Model.Waiting.Count > 0)
+        {
+            <h2 class="h6">Waiting to be read</h2>
+            <div class="table-responsive mb-4">
+                <table class="table table-sm small align-middle">
+                    <thead><tr><th>Received</th><th>Company</th><th>Slip</th><th>Tries</th><th>Next try</th><th>Note</th></tr></thead>
+                    <tbody>
+                        @foreach (var w in Model.Waiting)
+                        {
+                            <tr>
+                                <td>@AiReadsModel.When(w.ReceivedAt)</td>
+                                <td>@w.Company</td>
+                                <td>#@w.CaptureId</td>
+                                <td>@w.Attempts</td>
+                                <td>@(w.NextTry is null ? "now" : AiReadsModel.When(w.NextTry))</td>
+                                <td class="text-warning-emphasis">@w.Error</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+
+        <h2 class="h6">Read</h2>
+        @if (Model.Reads.Count == 0)
+        {
+            <div class="tl-card p-3 text-body-secondary">Nothing read yet.</div>
+        }
+        <div class="d-flex flex-column gap-2">
+            @foreach (var r in Model.Reads)
+            {
+                <details class="tl-card p-2" data-capture="@r.CaptureId">
+                    <summary class="small">
+                        <span class="fw-semibold">@AiReadsModel.When(r.ReadAt)</span> ·
+                        @r.Company · #@r.CaptureId ·
+                        <strong>@(r.TypeName ?? "Type not sure")</strong>@(r.TypeConfidence is null ? "" : " (" + r.TypeConfidence + ")") ·
+                        @AiReadsModel.Seconds(r.Milliseconds) ·
+                        @(r.CostZar is decimal z ? AiPricing.Rand(z) : "no cost")
+                        @if (r.Error is not null)
+                        {
+                            <div class="text-warning-emphasis">@r.Error</div>
+                        }
+                    </summary>
+                    <div class="small mt-2">
+                        <div>@AiReadsModel.StatusText(r.Status) · @r.Model · @((r.Input ?? 0) + " in (" + (r.Cached ?? 0) + " cached) · " + (r.Output ?? 0) + " out" + (r.Peak == true ? " · peak" : r.Peak == false ? " · off-peak" : ""))</div>
+                        @if (r.Versions is not null)
+                        {
+                            <div class="text-body-secondary">Prompts: @r.Versions</div>
+                        }
+                        @foreach (var (title, text) in new[] { ("Step 1 answer (detect)", r.DetectJson), ("Step 2 answer (read)", r.ReadJson) })
+                        {
+                            if (!string.IsNullOrEmpty(text))
+                            {
+                                <div class="mt-2 fw-semibold">@title</div>
+                                <pre class="tl-scroll-box bg-body-tertiary p-2 rounded small mb-0">@text</pre>
+                            }
+                        }
+                    </div>
+                </details>
+            }
+        </div>
+    </div>
+</section>

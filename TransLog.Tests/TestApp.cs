@@ -38,6 +38,8 @@ public sealed class TestApp : WebApplicationFactory<Program>, IAsyncLifetime
         builder.UseSetting("SysAdmin:Password", AdminPassword);
         builder.UseSetting("SysAdmin:FullName", "Test Admin");
         builder.UseSetting("Storage:Root", FilesRoot);
+        // Part 5a2b2: no background reading in ordinary tests (FakeAiWorkerApp switches it on with a fake AI).
+        builder.UseSetting("Ai:Worker:Enabled", "false");
     }
 
     public Task InitializeAsync()

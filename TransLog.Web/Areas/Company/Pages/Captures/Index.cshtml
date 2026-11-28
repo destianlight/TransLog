@@ -90,6 +90,29 @@
                                     if (!r.HasLocation) { <span> · no location</span> }
                                 }
                             </div>
+                            @if (r.TypeName is not null || r.EventDate is not null)
+                            {
+                                <div data-read="@r.CaptureId">
+                                    <strong>@(r.TypeName ?? "Type not sure")</strong>@(r.EventDate is DateOnly ed ? " · slip date " + TransLog.Web.Areas.CompanyArea.Pages.Captures.IndexModel.Day(ed) : "")
+                                </div>
+                            }
+                            @if (r.Note is not null)
+                            {
+                                <div class="text-warning-emphasis text-truncate">@Icons.Svg("exclamation-triangle") @r.Note</div>
+                            }
+                            @if (r.Values.Count > 0)
+                            {
+                                <details class="mt-1">
+                                    <summary class="text-body-secondary">What the AI read</summary>
+                                    <dl class="row mb-0 mt-1">
+                                        @foreach (var (label, value) in r.Values)
+                                        {
+                                            <dt class="col-5 fw-normal text-body-secondary">@label</dt>
+                                            <dd class="col-7 mb-0 font-monospace text-break">@value</dd>
+                                        }
+                                    </dl>
+                                </details>
+                            }
                             <partial name="_CaptureProgress" model="new CaptureProgress(r.CaptureId, r.Status)" />
                         </div>
                     </div>

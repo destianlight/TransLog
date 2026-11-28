@@ -50,8 +50,11 @@ public sealed class FakeVisionClient : IVisionClientFactory, IVisionClient
     public static VisionAnswer Down() =>
         new(null, null, default, null, TimeSpan.FromMilliseconds(5), VisionFailure.Provider, "Call: too many requests (429), try again later.");
 
-    /// <summary>Detect says fuel, read gives <see cref="FuelRead"/>; the second call is mostly cached.</summary>
-    public void FuelSlip() => Answer = (n, _) => n == 1 ? Ok(FuelDetect, 1200, 0, 40) : Ok(FuelRead, 1400, 1024, 220);
+    /// <summary>True for the step 1 prompt (its type list always ends with "- other:").</summary>
+    public static bool IsDetect(string prompt) => prompt.Contains("- other:", StringComparison.Ordinal);
+
+    /// <summary>Detect says fuel, read gives <see cref="FuelRead"/>; the second call is mostly cached. Works for slips read at the same time.</summary>
+    public void FuelSlip() => Answer = (_, prompt) => IsDetect(prompt) ? Ok(FuelDetect, 1200, 0, 40) : Ok(FuelRead, 1400, 1024, 220);
 
     public void Reset()
     {
@@ -102,7 +105,7 @@ public sealed class FakeVisionClient : IVisionClientFactory, IVisionClient
 /// A test database with two apps on it (Part 5a2b): <see cref="App"/> as usual (DeepSeek has no key), and
 /// <see cref="Ai"/>, where DeepSeek has a key from the server settings and <see cref="Fake"/> answers every AI call.
 /// </summary>
-public sealed class FakeAiApp : IAsyncLifetime
+public class FakeAiApp : IAsyncLifetime
 {
     public const string FakeKey = "sk-fake-for-tests-1234";
 
@@ -112,12 +115,18 @@ public sealed class FakeAiApp : IAsyncLifetime
 
     public WebApplicationFactory<Program> Ai { get; private set; } = null!;
 
+    /// <summary>Part 5a2b2: the background worker runs in <see cref="Ai"/> (looking every second) when true.</summary>
+    protected virtual bool Worker => false;
+
     public async Task InitializeAsync()
     {
         await App.InitializeAsync();
         Ai = App.WithWebHostBuilder(b =>
         {
             b.UseSetting("Ai:Providers:deepseek:ApiKey", FakeKey);
+            b.UseSetting("Ai:Worker:Enabled", Worker ? "true" : "false");
+            b.UseSetting("Ai:Worker:EverySeconds", "1");
+            b.UseSetting("Ai:Worker:StartDelaySeconds", "0");
             b.ConfigureTestServices(s => s.AddSingleton<IVisionClientFactory>(Fake));
         });
         _ = Ai.Server;
@@ -136,4 +145,10 @@ public sealed class FakeAiApp : IAsyncLifetime
         BaseAddress = new Uri("https://localhost"),
         HandleCookies = true,
     }));
+}
+
+/// <summary>Part 5a2b2: like <see cref="FakeAiApp"/>, with the background worker reading every waiting slip with the fake AI.</summary>
+public sealed class FakeAiWorkerApp : FakeAiApp
+{
+    protected override bool Worker => true;
 }

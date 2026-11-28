@@ -126,7 +126,7 @@ public sealed record CaptureSaveResult(bool Ok, int? CaptureId = null, bool Dupl
 /// Saves uploaded photos: checks the file, writes it and its preview to the file store, and adds the Capture with its image.
 /// The same ClientKey twice returns the first capture, so retries from the phone are safe.
 /// </summary>
-public class CaptureService(AppDbContext db, IFileStore files, ILogger<CaptureService> log)
+public class CaptureService(AppDbContext db, IFileStore files, ILogger<CaptureService> log, TransLog.Web.Ai.AiQueue aiQueue)
 {
     /// <summary>A driver sends a photo from the camera page. The vehicle is the driver's linked vehicle at that moment (or none).</summary>
     public async Task<CaptureSaveResult> SaveForDriverAsync(int userId, CaptureUpload upload)
@@ -250,6 +250,7 @@ public class CaptureService(AppDbContext db, IFileStore files, ILogger<CaptureSe
             throw;
         }
 
+        aiQueue.Wake(); // Part 5a2b2: start reading at once
         return new CaptureSaveResult(true, capture.Id);
     }
 

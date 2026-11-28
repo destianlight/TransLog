@@ -139,6 +139,10 @@ builder.Services.AddHttpClient("ai", c => c.Timeout = TimeSpan.FromSeconds(20));
 builder.Services.AddHttpClient(TransLog.Web.Ai.VisionClientFactory.HttpName, c => c.Timeout = TimeSpan.FromSeconds(90));
 builder.Services.AddSingleton<TransLog.Web.Ai.IVisionClientFactory, TransLog.Web.Ai.VisionClientFactory>();
 builder.Services.AddScoped<TransLog.Web.Ai.SlipReader>();
+// Part 5a2b2: the background worker that reads waiting slips (Capture rows with Status Processing are the queue).
+builder.Services.AddSingleton<TransLog.Web.Ai.AiQueue>();
+builder.Services.AddScoped<TransLog.Web.Ai.CaptureReader>();
+builder.Services.AddHostedService<TransLog.Web.Ai.AiWorker>();
 
 builder.Services.Configure<RequestLocalizationOptions>(o =>
 {
