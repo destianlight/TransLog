@@ -6,7 +6,7 @@ namespace TransLog.Web.Data;
 
 /// <summary>
 /// Runs at startup: applies database migrations, makes sure the roles exist,
-/// and creates the first system admin from server settings (SysAdmin:Email, SysAdmin:Password)
+/// seeds the built-in AI prompts (Part 5a1), and creates the first system admin from server settings (SysAdmin:Email, SysAdmin:Password)
 /// when there is none yet. After that the settings are ignored.
 /// </summary>
 public static class DbInitializer
@@ -25,6 +25,11 @@ public static class DbInitializer
             if (!await roleManager.RoleExistsAsync(role))
                 await roleManager.CreateAsync(new AppRole(role));
         }
+
+        // Part 5a1: the built-in AI prompts and capture types, only when missing (edits are never overwritten).
+        var seeded = await TransLog.Web.Ai.PromptSeeds.SeedAsync(db);
+        if (seeded > 0)
+            logger.LogInformation("{Count} built-in AI prompt entries added.", seeded);
 
         var userManager = sp.GetRequiredService<UserManager<AppUser>>();
 

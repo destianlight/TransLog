@@ -369,3 +369,7 @@ a.tl-avatar-link .tl-avatar-edit {
     color: #fff;
     font-size: .85rem;
 }
+
+/* Part 5a1: AI prompt edit page */
+.tl-scroll-box { max-height: 16rem; overflow-y: auto; }
+.tl-field-row { background: var(--bs-tertiary-bg); }

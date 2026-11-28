@@ -1,0 +1,169 @@
+@page "{id:int?}"
+@model TransLog.Web.Areas.SysAdmin.Pages.Prompts.EditModel
+@using TransLog.Web.Ai
+@{
+    ViewData["Title"] = Model.Title;
+    var isType = Model.Kind == PromptKind.Type;
+    var selected = Model.Form.Scope == PromptScope.SelectedCompanies;
+}
+
+<section class="tl-section">
+    <div class="container" style="max-width: 980px">
+        <p class="mb-2"><a asp-page="Index">&larr; AI prompts</a></p>
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+            <h1 class="tl-h2 mb-0">@Model.Title</h1>
+            @if (Model.Id is int id)
+            {
+                <div class="d-flex flex-wrap gap-2">
+                    <a class="btn btn-outline-secondary" asp-page="History" asp-route-id="@id">@Icons.Svg("clock-history") History (@PromptSet.VersionLabel(Model.Version))</a>
+                    @if (Model.IsGlobalEntry)
+                    {
+                        <a class="btn btn-outline-secondary" href="@($"/sysadmin/prompts/edit?from={id}")">@Icons.Svg("buildings") Version for selected companies</a>
+                    }
+                </div>
+            }
+        </div>
+
+        @if (TempData["Message"] is string message)
+        {
+            <div class="alert alert-success">@message</div>
+        }
+        @if (Model.Source is not null)
+        {
+            <div class="alert alert-info small">
+                A copy of <strong>@Model.Source.Name</strong>. Tick the companies it is for: for them it replaces the Global
+                <code>@Model.Source.Key</code> entry. The Global entry stays as it is for everyone else.
+            </div>
+        }
+
+        <form method="post" class="tl-card" data-tl-prompt-form>
+            <div asp-validation-summary="ModelOnly" class="alert alert-danger small" role="alert"></div>
+
+            <div class="row g-3 mb-3">
+                <div class="col-md-6">
+                    <label asp-for="Form.Name" class="form-label">Name</label>
+                    <input asp-for="Form.Name" class="form-control" maxlength="100" />
+                </div>
+                <div class="col-md-6">
+                    <label for="Key" class="form-label">Key</label>
+                    @if (Model.FixedKey is not null)
+                    {
+                        <input id="Key" class="form-control font-monospace" value="@Model.FixedKey" readonly />
+                        <div class="form-text">The key never changes once created.</div>
+                    }
+                    else
+                    {
+                        <input asp-for="Key" class="form-control font-monospace" maxlength="40" autocapitalize="none" spellcheck="false" placeholder="loads" />
+                        <div class="form-text">Lower case letters, digits and _, for example <code>loads</code>. Fixed after saving.</div>
+                    }
+                </div>
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="Form.Description" class="form-label">@(isType ? "Description (what the type detector reads)" : "Description (a note for admins)")</label>
+                <textarea asp-for="Form.Description" class="form-control" rows="3" maxlength="1000"></textarea>
+                @if (isType)
+                {
+                    <div class="form-text">Say when a photo is this type, so step 1 can tell it apart from the others.</div>
+                }
+            </div>
+
+            @if (isType)
+            {
+                <h2 class="h5 mt-4">Fields</h2>
+                <p class="small text-body-secondary mb-2">
+                    What the AI reads from this type. <strong>Core column</strong> puts the value in a real column for reports
+                    (each core column at most once). Empty rows are ignored.
+                </p>
+                <div data-tl-fields>
+                    @for (var i = 0; i < Model.Form.Fields.Count; i++)
+                    {
+                        <partial name="_FieldRow" model="new TransLog.Web.Areas.SysAdmin.Pages.Prompts.FieldRow(i, Model.Form.Fields[i])" />
+                    }
+                </div>
+                <template id="tl-field-template">
+                    <partial name="_FieldRow" model="new TransLog.Web.Areas.SysAdmin.Pages.Prompts.FieldRow(0, new PromptField())" />
+                </template>
+                <button type="button" class="btn btn-sm btn-outline-secondary mb-4" data-tl-add-field>@Icons.Svg("plus-lg") Add field</button>
+            }
+
+            <div class="mb-3">
+                <label asp-for="Form.Prompt" class="form-label">Prompt</label>
+                <textarea asp-for="Form.Prompt" class="form-control font-monospace small" rows="16" spellcheck="false"></textarea>
+                <div class="form-text">
+                    @if (Model.Kind == PromptKind.Detect)
+                    {
+                        <span>Must contain <code>{types}</code> (the company's types) and the word json with an example answer.</span>
+                    }
+                    else if (isType)
+                    {
+                        <span>Must contain <code>{fields}</code>: it becomes the field list and an example answer in json.</span>
+                    }
+                    else
+                    {
+                        <span>Must contain the word json.</span>
+                    }
+                </div>
+            </div>
+
+            <h2 class="h5 mt-4">Scope</h2>
+            @if (Model.LockedGlobal)
+            {
+                <input type="hidden" name="Form.Scope" value="Global" />
+                <p class="small text-body-secondary">Global, always on: every company needs a system and a detection prompt. Use <em>Version for selected companies</em> to give some companies their own.</p>
+            }
+            else
+            {
+                <div class="d-flex flex-wrap gap-3 mb-2">
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="Form.Scope" id="scopeGlobal" value="Global" checked="@(!selected)" data-tl-scope />
+                        <label class="form-check-label" for="scopeGlobal">Global (every company)</label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="Form.Scope" id="scopeSelected" value="SelectedCompanies" checked="@selected" data-tl-scope />
+                        <label class="form-check-label" for="scopeSelected">Selected companies</label>
+                    </div>
+                </div>
+                <div class="border rounded-3 p-2 mb-3 tl-scroll-box" data-tl-companies>
+                    @if (Model.Companies.Count == 0)
+                    {
+                        <p class="small text-body-secondary mb-0">No companies yet.</p>
+                    }
+                    @foreach (var c in Model.Companies)
+                    {
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" name="Form.CompanyIds" value="@c.Id" id="@("co" + c.Id)" checked="@(Model.Form.CompanyIds.Contains(c.Id))" />
+                            <label class="form-check-label" for="@("co" + c.Id)">@(c.Name + (c.IsActive ? "" : " (off)"))</label>
+                        </div>
+                    }
+                </div>
+            }
+
+            @if (Model.LockedGlobal)
+            {
+                <input type="hidden" name="Form.IsActive" value="true" />
+            }
+            else
+            {
+                <div class="form-check form-switch mb-4">
+                    <input asp-for="Form.IsActive" class="form-check-input" role="switch" />
+                    <label asp-for="Form.IsActive" class="form-check-label">On (switched off, it is left out for every company it is for)</label>
+                </div>
+            }
+
+            <button type="submit" class="btn btn-tl">Save as new version</button>
+        </form>
+
+        @if (Model.Preview is not null)
+        {
+            <details class="mt-4">
+                <summary>Step 2 prompt as the AI gets it (saved version)</summary>
+                <pre class="tl-card small mt-2" style="white-space: pre-wrap">@Model.Preview</pre>
+            </details>
+        }
+    </div>
+</section>
+
+@section Scripts {
+    <script src="~/resources/page-ai-prompt.js" asp-append-version="true"></script>
+}

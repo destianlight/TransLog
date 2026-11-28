@@ -129,6 +129,8 @@ builder.Services.AddSingleton<IFileStore, LocalFileStore>();
 builder.Services.AddScoped<CaptureService>();
 // Part 4c: driver profile photos.
 builder.Services.AddScoped<TransLog.Web.Fleet.DriverPhotos>();
+// Part 5a1: AI prompts and capture types, managed by SysAdmins.
+builder.Services.AddScoped<TransLog.Web.Ai.PromptService>();
 
 builder.Services.Configure<RequestLocalizationOptions>(o =>
 {

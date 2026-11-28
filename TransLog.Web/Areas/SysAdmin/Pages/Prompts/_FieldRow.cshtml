@@ -1,0 +1,55 @@
+@model TransLog.Web.Areas.SysAdmin.Pages.Prompts.FieldRow
+@using TransLog.Web.Ai
+@{
+    var f = Model.Field;
+    var n = "Form.Fields[" + Model.Index.ToString(System.Globalization.CultureInfo.InvariantCulture) + "].";
+    var coreNames = new Dictionary<string, string>
+    {
+        ["Amount"] = "Amount", ["Quantity"] = "Quantity", ["Odometer"] = "Odometer",
+        ["ReferenceNo"] = "Reference no", ["Vendor"] = "Vendor", ["EventDate"] = "Slip date",
+    };
+}
+<div class="tl-field-row border rounded-3 p-2 mb-2" data-tl-field>
+    <div class="row g-2 align-items-end">
+        <div class="col-6 col-md-3">
+            <label class="form-label small mb-0">Key</label>
+            <input class="form-control form-control-sm font-monospace" data-name="Key" name="@(n + "Key")" value="@f.Key" maxlength="40" autocapitalize="none" spellcheck="false" />
+        </div>
+        <div class="col-6 col-md-4">
+            <label class="form-label small mb-0">Label</label>
+            <input class="form-control form-control-sm" data-name="Label" name="@(n + "Label")" value="@f.Label" maxlength="100" />
+        </div>
+        <div class="col-6 col-md-2">
+            <label class="form-label small mb-0">Type</label>
+            <select class="form-select form-select-sm" data-name="Type" name="@(n + "Type")">
+                @foreach (var t in PromptRules.FieldTypes)
+                {
+                    <option value="@t" selected="@(f.Type == t)">@PromptRules.FieldTypeNames[t]</option>
+                }
+            </select>
+        </div>
+        <div class="col-6 col-md-3">
+            <label class="form-label small mb-0">Unit</label>
+            <input class="form-control form-control-sm" data-name="Unit" name="@(n + "Unit")" value="@f.Unit" maxlength="20" placeholder="km, l, kg, R" />
+        </div>
+        <div class="col-6 col-md-3">
+            <label class="form-label small mb-0">Core column</label>
+            <select class="form-select form-select-sm" data-name="Core" name="@(n + "Core")">
+                <option value="">None</option>
+                @foreach (var c in coreNames)
+                {
+                    <option value="@c.Key" selected="@(f.Core == c.Key)">@c.Value</option>
+                }
+            </select>
+        </div>
+        <div class="col-3 col-md-2">
+            <div class="form-check mb-1">
+                <input class="form-check-input" type="checkbox" data-name="Required" name="@(n + "Required")" value="true" checked="@f.Required" id="@(n + "Required")" />
+                <label class="form-check-label small" for="@(n + "Required")">Required</label>
+            </div>
+        </div>
+        <div class="col-3 col-md-1 ms-auto text-end">
+            <button type="button" class="btn btn-sm btn-outline-danger" data-tl-remove-field aria-label="Remove field">@Icons.Svg("trash")</button>
+        </div>
+    </div>
+</div>

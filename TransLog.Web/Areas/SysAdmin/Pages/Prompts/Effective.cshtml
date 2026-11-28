@@ -1,0 +1,73 @@
+@page
+@model TransLog.Web.Areas.SysAdmin.Pages.Prompts.EffectiveModel
+@using TransLog.Web.Ai
+@{
+    ViewData["Title"] = Model.Set is null ? "Effective prompts" : "Effective for " + Model.CompanyName;
+}
+
+<section class="tl-section">
+    <div class="container" style="max-width: 980px">
+        <p class="mb-2"><a asp-page="Index">&larr; AI prompts</a></p>
+        <h1 class="tl-h2 mb-3">Effective prompts</h1>
+
+        <form method="get" class="tl-card mb-4 d-flex flex-wrap align-items-end gap-2">
+            <div class="flex-grow-1">
+                <label for="companyId" class="form-label">Company</label>
+                <select id="companyId" name="companyId" class="form-select">
+                    @foreach (var c in Model.Companies)
+                    {
+                        <option value="@c.Id" selected="@(c.Id == Model.CompanyId)">@c.Name</option>
+                    }
+                </select>
+            </div>
+            <button type="submit" class="btn btn-outline-secondary">Show</button>
+        </form>
+
+        @if (Model.Set is PromptSet ps)
+        {
+            <p class="text-body-secondary">What <strong>@Model.CompanyName</strong> gets now: an entry for selected companies replaces the Global one with the same key; switched-off entries are left out.</p>
+
+            <h2 class="h4 mt-4">Shared system prompt</h2>
+            if (ps.SystemPrompt is CaptureType sys)
+            {
+                <p class="small mb-1" data-effective="system">
+                    <a asp-page="Edit" asp-route-id="@sys.Id">@sys.Name</a> · @PromptSet.VersionLabel(sys.CurrentVersion) · @EffectiveModel.ScopeLabel(sys)
+                </p>
+                <pre class="tl-card small" style="white-space: pre-wrap">@sys.Prompt</pre>
+            }
+            else
+            {
+                <div class="alert alert-danger">No system prompt: this company's slips cannot be read.</div>
+            }
+
+            <h2 class="h4 mt-4">Type detection (step 1)</h2>
+            if (ps.DetectPrompt is CaptureType det)
+            {
+                <p class="small mb-1" data-effective="detect">
+                    <a asp-page="Edit" asp-route-id="@det.Id">@det.Name</a> · @PromptSet.VersionLabel(det.CurrentVersion) · @EffectiveModel.ScopeLabel(det)
+                </p>
+                <pre class="tl-card small" style="white-space: pre-wrap">@ps.DetectText()</pre>
+            }
+            else
+            {
+                <div class="alert alert-danger">No detection prompt: this company's slips cannot be read.</div>
+            }
+
+            <h2 class="h4 mt-4">Capture types (step 2)</h2>
+            if (ps.Types.Count == 0)
+            {
+                <div class="alert alert-warning">No active capture types.</div>
+            }
+            foreach (var t in ps.Types)
+            {
+                <details class="tl-card mb-2" data-effective-type="@t.Key" data-effective-scope="@t.Scope">
+                    <summary>
+                        <code>@t.Key</code> · @t.Name · @PromptSet.VersionLabel(t.CurrentVersion) · @EffectiveModel.ScopeLabel(t)
+                    </summary>
+                    <p class="small mt-2 mb-1"><a asp-page="Edit" asp-route-id="@t.Id">Edit</a></p>
+                    <pre class="small border rounded-3 p-2" style="white-space: pre-wrap">@PromptSet.TypeText(t)</pre>
+                </details>
+            }
+        }
+    </div>
+</section>

@@ -31,6 +31,12 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, CurrentCompany
 
     public DbSet<CaptureImage> CaptureImages => Set<CaptureImage>();
 
+    public DbSet<CaptureType> CaptureTypes => Set<CaptureType>();
+
+    public DbSet<CaptureTypeCompany> CaptureTypeCompanies => Set<CaptureTypeCompany>();
+
+    public DbSet<CaptureTypeVersion> CaptureTypeVersions => Set<CaptureTypeVersion>();
+
     protected override void OnModelCreating(ModelBuilder b)
     {
         base.OnModelCreating(b);
@@ -142,6 +148,30 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, CurrentCompany
             e.Property(i => i.Longitude).HasPrecision(9, 6);
             e.Property(i => i.Sha256).IsFixedLength().IsUnicode(false);
             e.HasIndex(i => new { i.CompanyId, i.Sha256 });
+        });
+
+        // ---- AI prompts and capture types (Part 5a1) ----
+        // Platform tables managed by SysAdmins: no tenant filter. Only one Global entry per key (the database checks it too).
+        b.Entity<CaptureType>(e =>
+        {
+            e.HasIndex(t => t.Key).IsUnique().HasFilter("[Scope] = 0");
+            e.HasIndex(t => new { t.Kind, t.Key });
+            e.HasOne<AppUser>().WithMany().HasForeignKey(t => t.UpdatedByUserId).OnDelete(DeleteBehavior.Restrict);
+        });
+
+        b.Entity<CaptureTypeCompany>(e =>
+        {
+            e.HasKey(c => new { c.CaptureTypeId, c.CompanyId });
+            e.HasOne<CaptureType>().WithMany(t => t.Companies).HasForeignKey(c => c.CaptureTypeId).OnDelete(DeleteBehavior.Restrict);
+            e.HasOne<Company>().WithMany().HasForeignKey(c => c.CompanyId).OnDelete(DeleteBehavior.Restrict);
+            e.HasIndex(c => c.CompanyId);
+        });
+
+        b.Entity<CaptureTypeVersion>(e =>
+        {
+            e.HasOne<CaptureType>().WithMany().HasForeignKey(v => v.CaptureTypeId).OnDelete(DeleteBehavior.Restrict);
+            e.HasOne<AppUser>().WithMany().HasForeignKey(v => v.CreatedByUserId).OnDelete(DeleteBehavior.Restrict);
+            e.HasIndex(v => new { v.CaptureTypeId, v.Version }).IsUnique();
         });
 
         // ---- Tenant filter ----

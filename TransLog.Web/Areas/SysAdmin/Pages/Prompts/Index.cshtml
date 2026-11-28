@@ -1,0 +1,72 @@
+@page
+@model TransLog.Web.Areas.SysAdmin.Pages.Prompts.IndexModel
+@using TransLog.Web.Ai
+@{
+    ViewData["Title"] = "AI prompts";
+    var groups = new[]
+    {
+        (Kind: PromptKind.System, Title: "Shared system prompt", Note: "Rules sent first with every AI call."),
+        (Kind: PromptKind.Detect, Title: "Type detection (step 1)", Note: "{types} is filled with the company's active capture types."),
+        (Kind: PromptKind.Type, Title: "Capture types (step 2)", Note: "What the detector reads, the fields and the reading prompt. {fields} is filled with the field list and an example answer."),
+    };
+}
+
+<section class="tl-section">
+    <div class="container" style="max-width: 980px">
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-3">
+            <h1 class="tl-h2 mb-0">AI prompts</h1>
+            <a class="btn btn-tl" asp-page="Edit">@Icons.Svg("plus-lg") New type</a>
+        </div>
+
+        @if (TempData["Message"] is string message)
+        {
+            <div class="alert alert-success">@message</div>
+        }
+
+        <p class="text-body-secondary">
+            An entry for <strong>selected companies</strong> replaces the Global entry with the same key for those companies.
+            A key that exists only for selected companies is an extra type for them. Switched-off entries are left out.
+            Every save is a new version; old versions can be restored.
+        </p>
+
+        <form method="get" asp-page="Effective" class="tl-card mb-4 d-flex flex-wrap align-items-end gap-2">
+            <div class="flex-grow-1">
+                <label for="companyId" class="form-label">Effective for company</label>
+                <select id="companyId" name="companyId" class="form-select">
+                    @foreach (var c in Model.Companies)
+                    {
+                        <option value="@c.Id">@c.Name</option>
+                    }
+                </select>
+            </div>
+            <button type="submit" class="btn btn-outline-secondary">Show</button>
+        </form>
+
+        @foreach (var g in groups)
+        {
+            var rows = Model.Rows.Where(r => r.Kind == g.Kind).ToList();
+            <h2 class="h4 mt-4 mb-1">@g.Title</h2>
+            <p class="small text-body-secondary mb-2">@g.Note</p>
+            <div class="table-responsive">
+                <table class="table align-middle">
+                    <thead><tr><th>Key</th><th>Name</th><th>Scope</th><th>Version</th><th>Status</th></tr></thead>
+                    <tbody>
+                        @foreach (var r in rows)
+                        {
+                            <tr data-prompt-key="@r.Key">
+                                <td><code>@r.Key</code></td>
+                                <td>
+                                    <a asp-page="Edit" asp-route-id="@r.Id">@r.Name</a>
+                                    <div class="small text-body-secondary">@AppCulture.ToSast(r.UpdatedAt).ToString("yyyy-MM-dd HH:mm")</div>
+                                </td>
+                                <td>@if (r.Scope == "Global") { <span class="badge text-bg-secondary">Global</span> } else { <span class="small">@r.Scope</span> }</td>
+                                <td><a asp-page="History" asp-route-id="@r.Id">@PromptSet.VersionLabel(r.Version)</a></td>
+                                <td>@if (r.IsActive) { <span class="badge text-bg-success">On</span> } else { <span class="badge text-bg-secondary">Off</span> }</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+</section>
