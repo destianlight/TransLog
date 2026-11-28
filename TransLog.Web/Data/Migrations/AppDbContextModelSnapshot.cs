@@ -125,6 +125,141 @@ namespace TransLog.Web.Data.Migrations
                     b.ToTable("AspNetUserTokens", (string)null);
                 });
 
+            modelBuilder.Entity("TransLog.Web.Data.AiPrice", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("AiProviderId")
+                        .HasColumnType("int");
+
+                    b.Property<decimal>("CachedInputPerM")
+                        .HasPrecision(12, 6)
+                        .HasColumnType("decimal(12,6)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int?>("CreatedByUserId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("EffectiveFrom")
+                        .HasColumnType("datetime2");
+
+                    b.Property<decimal>("InputPerM")
+                        .HasPrecision(12, 6)
+                        .HasColumnType("decimal(12,6)");
+
+                    b.Property<string>("Model")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<decimal?>("OffPeakCachedPerM")
+                        .HasPrecision(12, 6)
+                        .HasColumnType("decimal(12,6)");
+
+                    b.Property<decimal?>("OffPeakInputPerM")
+                        .HasPrecision(12, 6)
+                        .HasColumnType("decimal(12,6)");
+
+                    b.Property<decimal?>("OffPeakOutputPerM")
+                        .HasPrecision(12, 6)
+                        .HasColumnType("decimal(12,6)");
+
+                    b.Property<decimal>("OutputPerM")
+                        .HasPrecision(12, 6)
+                        .HasColumnType("decimal(12,6)");
+
+                    b.Property<string>("PeakDays")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("PeakHoursUtc")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<int>("Source")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreatedByUserId");
+
+                    b.HasIndex("AiProviderId", "Model", "EffectiveFrom");
+
+                    b.ToTable("AiPrices");
+                });
+
+            modelBuilder.Entity("TransLog.Web.Data.AiProvider", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("ApiKeyHint")
+                        .HasMaxLength(4)
+                        .HasColumnType("nvarchar(4)");
+
+                    b.Property<string>("ApiKeyProtected")
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<string>("BaseUrl")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Key")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("nvarchar(40)");
+
+                    b.Property<int>("Kind")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Model")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("OfficialDomain")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("PricingUrl")
+                        .HasMaxLength(300)
+                        .HasColumnType("nvarchar(300)");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int?>("UpdatedByUserId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Key")
+                        .IsUnique();
+
+                    b.HasIndex("UpdatedByUserId");
+
+                    b.ToTable("AiProviders");
+                });
+
             modelBuilder.Entity("TransLog.Web.Data.AppRole", b =>
                 {
                     b.Property<int>("Id")
@@ -551,6 +686,9 @@ namespace TransLog.Web.Data.Migrations
                         .HasMaxLength(300)
                         .HasColumnType("nvarchar(300)");
 
+                    b.Property<int?>("AiProviderId")
+                        .HasColumnType("int");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
@@ -582,6 +720,8 @@ namespace TransLog.Web.Data.Migrations
                         .HasColumnType("nvarchar(30)");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("AiProviderId");
 
                     b.HasIndex("Name")
                         .IsUnique();
@@ -717,6 +857,30 @@ namespace TransLog.Web.Data.Migrations
                     b.HasIndex("CompanyId", "VehicleId", "LinkedAt");
 
                     b.ToTable("DriverVehicleLinks");
+                });
+
+            modelBuilder.Entity("TransLog.Web.Data.PlatformSetting", b =>
+                {
+                    b.Property<string>("Key")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int?>("UpdatedByUserId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Value")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.HasKey("Key");
+
+                    b.HasIndex("UpdatedByUserId");
+
+                    b.ToTable("PlatformSettings");
                 });
 
             modelBuilder.Entity("TransLog.Web.Data.Vehicle", b =>
@@ -869,6 +1033,28 @@ namespace TransLog.Web.Data.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("TransLog.Web.Data.AiPrice", b =>
+                {
+                    b.HasOne("TransLog.Web.Data.AiProvider", null)
+                        .WithMany()
+                        .HasForeignKey("AiProviderId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("TransLog.Web.Data.AppUser", null)
+                        .WithMany()
+                        .HasForeignKey("CreatedByUserId")
+                        .OnDelete(DeleteBehavior.Restrict);
+                });
+
+            modelBuilder.Entity("TransLog.Web.Data.AiProvider", b =>
+                {
+                    b.HasOne("TransLog.Web.Data.AppUser", null)
+                        .WithMany()
+                        .HasForeignKey("UpdatedByUserId")
+                        .OnDelete(DeleteBehavior.Restrict);
+                });
+
             modelBuilder.Entity("TransLog.Web.Data.AppUser", b =>
                 {
                     b.HasOne("TransLog.Web.Data.Company", "Company")
@@ -959,6 +1145,14 @@ namespace TransLog.Web.Data.Migrations
                         .OnDelete(DeleteBehavior.Restrict);
                 });
 
+            modelBuilder.Entity("TransLog.Web.Data.Company", b =>
+                {
+                    b.HasOne("TransLog.Web.Data.AiProvider", null)
+                        .WithMany()
+                        .HasForeignKey("AiProviderId")
+                        .OnDelete(DeleteBehavior.Restrict);
+                });
+
             modelBuilder.Entity("TransLog.Web.Data.Driver", b =>
                 {
                     b.HasOne("TransLog.Web.Data.Company", null)
@@ -998,6 +1192,14 @@ namespace TransLog.Web.Data.Migrations
                     b.Navigation("Driver");
 
                     b.Navigation("Vehicle");
+                });
+
+            modelBuilder.Entity("TransLog.Web.Data.PlatformSetting", b =>
+                {
+                    b.HasOne("TransLog.Web.Data.AppUser", null)
+                        .WithMany()
+                        .HasForeignKey("UpdatedByUserId")
+                        .OnDelete(DeleteBehavior.Restrict);
                 });
 
             modelBuilder.Entity("TransLog.Web.Data.Vehicle", b =>
