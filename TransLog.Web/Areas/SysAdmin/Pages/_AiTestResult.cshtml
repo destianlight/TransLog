@@ -1,0 +1,150 @@
+@model TransLog.Web.Areas.SysAdmin.Pages.AiTestView
+@using TransLog.Web.Ai
+@using TransLog.Web.Areas.SysAdmin.Pages
+@* Part 5a2b1: the answer of one AI test run (inserted into the AI test page by page-ai-test.js). *@
+@if (Model.Error is not null)
+{
+    <div class="alert alert-danger" data-aitest="error">@Model.Error</div>
+    return;
+}
+@{
+    var r = Model.Read!;
+    var (badge, label, live) = r.Outcome switch
+    {
+        ReadOutcome.Read => ("text-bg-success", "Read", "Goes to Being checked with these values."),
+        ReadOutcome.TypeNotSure => ("text-bg-warning", "Type not sure", "Goes to Being checked; the reviewer picks the type."),
+        ReadOutcome.CouldNotRead => ("text-bg-danger", "Could not be read", "Goes to Being checked as Could not be read."),
+        ReadOutcome.ProviderProblem => ("text-bg-danger", "Provider problem", "Stays Waiting to be read and is tried again later."),
+        _ => ("text-bg-secondary", "No provider", "Stays Waiting to be read until a provider with a key is set."),
+    };
+    var texts = new (string Title, string? Text)[]
+    {
+        ("Step 1 answer (detect)", r.DetectRawJson),
+        ("Step 2 answer (read)", r.AiRawJson),
+        ("System prompt as sent", r.SystemText),
+        ("Step 1 prompt as sent", r.DetectText),
+        ("Step 2 prompt as sent", r.TypeText),
+    };
+}
+<div class="tl-card mb-3" data-aitest="@r.Outcome">
+    <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
+        <span class="badge @badge fs-6">@label</span>
+        @if (r.Type is not null)
+        {
+            <strong>@r.Type.Name</strong>
+        }
+        @if (r.TypeConfidence is not null)
+        {
+            <span class="small text-body-secondary">type confidence @r.TypeConfidence</span>
+        }
+    </div>
+    @if (r.Message is not null)
+    {
+        <p class="mb-2">@r.Message</p>
+    }
+    @if (r.TypeDescription is not null)
+    {
+        <p class="small mb-2"><em>@r.TypeDescription</em></p>
+    }
+    <div class="small text-body-secondary">
+        @Model.CompanyName ·
+        @(r.Provider is null ? "no provider" : r.Provider.Name + " · " + r.Model) ·
+        @AiTestModel.Seconds(r.Total) ·
+        @(r.Cost is null ? "no price for this model" : AiPricing.Rand(r.Cost.Zar) + (r.Cost.Peak ? " (peak)" : " (off-peak)"))
+    </div>
+    <div class="small text-body-secondary">
+        @("Photo sent: " + (Model.Bytes / 1024) + " KB" + (Model.Width is int w ? " · " + w + " × " + Model.Height + " px" : "")) ·
+        @("prompts system " + PromptSet.VersionLabel(r.SystemVersion ?? 0) + ", detect " + PromptSet.VersionLabel(r.DetectVersion ?? 0)
+          + (r.Type is null ? "" : ", " + r.Type.Key + " " + PromptSet.VersionLabel(r.TypeVersion ?? 0)))
+    </div>
+    <div class="small mt-1">In the live app: @live</div>
+</div>
+
+@if (r.Steps.Count > 0)
+{
+    <h2 class="h6">Steps</h2>
+    <div class="table-responsive mb-3">
+        <table class="table table-sm small align-middle">
+            <thead><tr><th>Step</th><th>Time</th><th>Tokens</th><th>Cost</th><th></th></tr></thead>
+            <tbody>
+                @foreach (var s in r.Steps)
+                {
+                    <tr>
+                        <td>@s.Name</td>
+                        <td>@AiTestModel.Seconds(s.Duration)</td>
+                        <td>@(s.Tokens == default ? "" : AiTestModel.Tokens(s.Tokens))</td>
+                        <td>@(s.Cost is null ? "" : AiPricing.Rand(s.Cost.Zar))</td>
+                        <td>
+                            @if (s.Tries > 1)
+                            {
+                                <span class="badge text-bg-warning">tried twice</span>
+                            }
+                            @if (!s.Ok)
+                            {
+                                <span class="text-danger">@s.Error</span>
+                            }
+                        </td>
+                    </tr>
+                }
+                <tr class="fw-semibold">
+                    <td>Total</td>
+                    <td>@AiTestModel.Seconds(r.Total)</td>
+                    <td>@AiTestModel.Tokens(r.Tokens)</td>
+                    <td>@(r.Cost is null ? "" : AiPricing.Rand(r.Cost.Zar) + " · " + AiPricing.Usd(r.Cost.Usd))</td>
+                    <td></td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+}
+
+@if (r.Values.Count > 0)
+{
+    <h2 class="h6">Fields read</h2>
+    <div class="table-responsive mb-3">
+        <table class="table table-sm small align-middle" data-aitest-fields>
+            <thead><tr><th>Field</th><th>Value</th><th>Confidence</th><th>Core column</th></tr></thead>
+            <tbody>
+                @foreach (var v in r.Values)
+                {
+                    <tr data-field="@v.Key">
+                        <td>@v.Label <span class="text-body-secondary">(@v.Key)</span></td>
+                        <td class="font-monospace">@(v.Value ?? "—")</td>
+                        <td>
+                            @if (v.Confidence is not null)
+                            {
+                                <span class="badge @(v.Confidence == "high" ? "text-bg-success" : v.Confidence == "medium" ? "text-bg-warning" : "text-bg-danger")">@v.Confidence</span>
+                            }
+                        </td>
+                        <td>@v.Core</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+    <h2 class="h6">Core columns as they would be stored</h2>
+    <ul class="small mb-3" data-aitest-core>
+        <li>Slip date (EventDate): @(r.EventDate?.ToString("yyyy-MM-dd") ?? "—")</li>
+        <li>Amount: @(r.Amount is decimal a ? AiPricing.Show(a) : "—")</li>
+        <li>Quantity: @(r.Quantity is decimal q ? AiPricing.Show(q) : "—")</li>
+        <li>Odometer: @(r.Odometer is decimal o ? AiPricing.Show(o) : "—")</li>
+        <li>Reference no: @(r.ReferenceNo ?? "—")</li>
+        <li>Vendor: @(r.Vendor ?? "—")</li>
+    </ul>
+}
+
+<h2 class="h6">Answers and prompts</h2>
+@foreach (var (title, text) in texts)
+{
+    if (string.IsNullOrEmpty(text))
+    {
+        continue;
+    }
+    <details class="tl-card mb-2">
+        <summary class="fw-semibold small">@title</summary>
+        <textarea class="form-control font-monospace small mt-2 mb-2" rows="8" readonly>@text</textarea>
+        <button type="button" class="btn btn-sm btn-outline-secondary" data-copy>Copy</button>
+        <span class="small text-success d-none" data-copied>Copied.</span>
+    </details>
+}

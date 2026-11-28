@@ -1,0 +1,76 @@
+@page
+@model TransLog.Web.Areas.SysAdmin.Pages.AiTestModel
+@{
+    ViewData["Title"] = "AI test";
+}
+
+<section class="tl-section">
+    <div class="container" style="max-width: 860px">
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-3">
+            <h1 class="tl-h2 mb-0">AI test</h1>
+            <a class="btn btn-outline-secondary" href="/sysadmin/aihelp#aitest">@Icons.Svg("question-circle") Help</a>
+        </div>
+        <p class="text-body-secondary">
+            Read one photo with a company's prompts, exactly as a slip from that company would be read. You see both answers,
+            the time of each step and the cost. <strong>Nothing is stored</strong>; each run costs about R0.01 to R0.02.
+        </p>
+
+        @if (Model.Usable.Count == 0)
+        {
+            <div class="alert alert-warning">No AI provider is on with an API key. Add the key under <a asp-page="/Providers/Index">AI providers</a> first.</div>
+        }
+
+        <form id="aitest" method="post" enctype="multipart/form-data" asp-page-handler="Run" class="tl-card mb-4">
+            <div class="row g-3">
+                <div class="col-sm-6">
+                    <label for="companyId" class="form-label">Company (its prompts)</label>
+                    <select id="companyId" name="companyId" class="form-select" required>
+                        @foreach (var c in Model.Companies)
+                        {
+                            <option value="@c.Id">@(c.Active ? c.Name : c.Name + " (off)")</option>
+                        }
+                    </select>
+                </div>
+                <div class="col-sm-6">
+                    <label for="providerId" class="form-label">AI provider</label>
+                    <select id="providerId" name="providerId" class="form-select">
+                        <option value="">The company's provider (global: @Model.GlobalName)</option>
+                        @foreach (var p in Model.Usable)
+                        {
+                            <option value="@p.Id">@p.Name · @p.Model</option>
+                        }
+                    </select>
+                </div>
+            </div>
+
+            <div class="mt-3">
+                <label for="photo" class="form-label">Photo</label>
+                <input id="photo" type="file" accept="image/jpeg,image/png,image/webp,image/*" class="form-control" />
+                <div class="form-check mt-2">
+                    <input class="form-check-input" type="checkbox" id="shrink" checked />
+                    <label class="form-check-label" for="shrink">Shrink like the phone (longest side 1600 px, JPEG 0.8)</label>
+                </div>
+            </div>
+
+            <div id="previewBox" class="mt-3 d-none">
+                <div class="d-flex align-items-center gap-2 mb-2">
+                    <button type="button" class="btn btn-sm btn-outline-secondary" id="turnLeft" aria-label="Turn left">@Icons.Svg("arrow-counterclockwise")</button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary" id="turnRight" aria-label="Turn right">@Icons.Svg("arrow-clockwise")</button>
+                    <span class="small text-body-secondary" id="photoInfo"></span>
+                </div>
+                <canvas id="preview" class="tl-aitest-preview"></canvas>
+            </div>
+
+            <div class="mt-3 d-flex align-items-center gap-3">
+                <button type="submit" class="btn btn-tl" id="run" disabled>@Icons.Svg("lightning-charge-fill") Read it</button>
+                <span class="small text-body-secondary" id="status"></span>
+            </div>
+        </form>
+
+        <div id="result"></div>
+    </div>
+</section>
+
+@section Scripts {
+    <script src="~/resources/page-ai-test.js" asp-append-version="true"></script>
+}

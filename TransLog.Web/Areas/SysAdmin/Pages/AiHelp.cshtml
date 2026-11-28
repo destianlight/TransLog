@@ -1,5 +1,5 @@
 @page
-@* Help for SysAdmins on the AI pages: prompts (5a1), providers, prices and settings (5a2a). 5a2b adds the AI test page. *@
+@* Help for SysAdmins on the AI pages: prompts (5a1), providers, prices and settings (5a2a), AI test (5a2b1). *@
 @{
     ViewData["Title"] = "AI help";
 }
@@ -26,6 +26,7 @@
                 <li><a href="#providers">AI providers and API keys</a></li>
                 <li><a href="#prices">Prices and cost</a></li>
                 <li><a href="#settings">Platform settings</a></li>
+                <li><a href="#aitest">AI test</a></li>
                 <li><a href="#later">What comes later</a></li>
             </ol>
         </nav>
@@ -37,7 +38,7 @@
             <li><strong>Step 2, read:</strong> the chosen <strong>capture type's prompt</strong> asks for that type's fields and gets them back as json.</li>
         </ol>
         <p>If step 1 says "other" or is not sure, the slip goes to review and the reviewer picks the type. The AI only fills in the data: TransLog's own checks and the reviewer decide whether it is right.</p>
-        <div class="alert alert-info small">The reading itself starts in Part 5a2b. Until then you can set up and test the prompts here, but no slip is sent to the AI yet.</div>
+        <div class="alert alert-info small">Since Part 5a2b1 you can try any photo on the <a href="/sysadmin/aitest">AI test</a> page. Slips that drivers and the office send are read automatically from Part 5a2b2; until then they wait as "Waiting to be read".</div>
 
         <h2 id="kinds" class="h4 mt-5">2. The three kinds of entry</h2>
         <div class="table-responsive">
@@ -195,7 +196,7 @@ Answer in json exactly in this shape …
             <li><strong>Never ask the AI to work things out</strong> (VAT, net mass, litres × price). TransLog checks the sums itself (Part 5c); the AI must only read.</li>
             <li><strong>Codes stay text.</strong> The AI mixes up S and 8, O and 0. The system prompt warns it, and TransLog's checks and the reviewer catch the rest; a confident "high" is not proof.</li>
             <li><strong>Descriptions should differ.</strong> If two types sound alike, step 1 will mix them up. Say what makes each one different ("not a fuel slip").</li>
-            <li><strong>Change one thing at a time</strong> and test it on a few real slips (AI test page, from 5a2b). If it gets worse, restore.</li>
+            <li><strong>Change one thing at a time</strong> and test it on a few real slips (<a href="/sysadmin/aitest">AI test</a> page). If it gets worse, restore.</li>
             <li><strong>Keep it short.</strong> Every word is paid for on every slip; the system prompt and photo are cached, the rest is not.</li>
         </ul>
 
@@ -237,9 +238,28 @@ Answer in json exactly in this shape …
             <li>Every change is in the Audit log with the old and new value (PlatformSettingChanged).</li>
         </ul>
 
-        <h2 id="later" class="h4 mt-5">14. What comes later</h2>
+        <h2 id="aitest" class="h4 mt-5">14. AI test</h2>
+        <p>AI ▾ › <strong>AI test</strong> reads one photo exactly as a slip from the chosen company would be read, and shows everything. <strong>Nothing is stored</strong>: not the photo, not the answer. Each run costs about R0.01 to R0.02 and is written to the Audit log (AiTestRun).</p>
+        <div class="tl-card mb-3">
+            <h3 class="h6">Try a slip</h3>
+            <ol class="small mb-0">
+                <li>Choose the <strong>company</strong>: its prompts are used (global ones plus any for selected companies, as on Effective for company).</li>
+                <li>Leave <strong>AI provider</strong> on "The company's provider", or pick another one to compare.</li>
+                <li>Choose a <strong>photo</strong>. Keep <em>Shrink like the phone</em> ticked to test what a driver's phone really sends. Turn it with the arrows if it is sideways.</li>
+                <li>Tap <strong>Read it</strong> and wait 10 to 25 seconds.</li>
+            </ol>
+        </div>
+        <ul>
+            <li>The top box says how it ended and what the live app would do with the slip: <strong>Read</strong> (to Being checked), <strong>Type not sure</strong> (step 1 said "other", a type the company does not have, or low confidence; step 2 is not run), <strong>Could not be read</strong> (a bad answer twice), <strong>Provider problem</strong> (no answer, key refused, no balance: tried again later) or <strong>No provider</strong>.</li>
+            <li><strong>Steps</strong> shows upload, detect, read and delete with time, tokens and cost. "tried twice" means the first answer was empty, cut off or not json (both tries are paid for). The read step's input is mostly <em>cached</em>: the system prompt and photo come from step 1.</li>
+            <li><strong>Fields read</strong> lists every field of the type with the AI's value and confidence; <strong>Core columns</strong> shows what would go into the slip date, amount, quantity, odometer, reference and vendor columns.</li>
+            <li><strong>Answers and prompts</strong> holds both raw answers and the three prompts exactly as sent, each with Copy. Paste them into a Claude chat to improve a prompt, then paste the new prompt block on the prompt's edit page.</li>
+            <li>After changing a prompt, run the same photo again: the versions used are shown under the result.</li>
+        </ul>
+
+        <h2 id="later" class="h4 mt-5">15. What comes later</h2>
         <ul class="small">
-            <li><strong>5a2b:</strong> the AI actually reads slips with these prompts and the chosen provider, and stores the cost in rand on each slip; an AI test page to try a photo with any company's prompts.</li>
+            <li><strong>5a2b2:</strong> every slip that drivers and the office send is read automatically in the background (started on upload, checked every 30 s and at startup), with the type, slip date, values, prompt versions and cost in rand stored on the slip; an AI reads page lists recent reads.</li>
             <li><strong>5d:</strong> "Check provider" finds new prices on the provider's own site for you to approve, and "Get rate" fetches the dollar rate.</li>
             <li><strong>Part 7:</strong> the full type editor (choice lists, vehicle and driver pickers), companies' own types, and photo checks such as "Is an open diesel cap visible?".</li>
         </ul>

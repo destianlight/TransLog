@@ -135,6 +135,10 @@ builder.Services.AddScoped<TransLog.Web.Ai.PromptService>();
 builder.Services.AddSingleton<TransLog.Web.Ai.AiKeys>();
 builder.Services.AddScoped<TransLog.Web.Ai.AiProviders>();
 builder.Services.AddHttpClient("ai", c => c.Timeout = TimeSpan.FromSeconds(20));
+// Part 5a2b1: reading slips. One call can take 20 s or more (the upload is processed first), so a longer timeout.
+builder.Services.AddHttpClient(TransLog.Web.Ai.VisionClientFactory.HttpName, c => c.Timeout = TimeSpan.FromSeconds(90));
+builder.Services.AddSingleton<TransLog.Web.Ai.IVisionClientFactory, TransLog.Web.Ai.VisionClientFactory>();
+builder.Services.AddScoped<TransLog.Web.Ai.SlipReader>();
 
 builder.Services.Configure<RequestLocalizationOptions>(o =>
 {
