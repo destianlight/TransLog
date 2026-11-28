@@ -426,6 +426,65 @@ namespace TransLog.Web.Data.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
+                    b.Property<int>("AiAttempts")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("AiCachedTokens")
+                        .HasColumnType("int");
+
+                    b.Property<decimal?>("AiCostUsd")
+                        .HasPrecision(12, 6)
+                        .HasColumnType("decimal(12,6)");
+
+                    b.Property<decimal?>("AiCostZar")
+                        .HasPrecision(12, 4)
+                        .HasColumnType("decimal(12,4)");
+
+                    b.Property<int?>("AiInputTokens")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("AiLockedUntil")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int?>("AiMilliseconds")
+                        .HasColumnType("int");
+
+                    b.Property<string>("AiModel")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<DateTime?>("AiNextTryAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int?>("AiOutputTokens")
+                        .HasColumnType("int");
+
+                    b.Property<bool?>("AiPeak")
+                        .HasColumnType("bit");
+
+                    b.Property<int?>("AiPriceId")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("AiProviderId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("AiRawJson")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("AiReadAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<decimal?>("AiUsdToZar")
+                        .HasPrecision(10, 4)
+                        .HasColumnType("decimal(10,4)");
+
+                    b.Property<decimal?>("Amount")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<int?>("CaptureTypeId")
+                        .HasColumnType("int");
+
                     b.Property<DateTime>("CapturedAt")
                         .HasColumnType("datetime2");
 
@@ -438,19 +497,69 @@ namespace TransLog.Web.Data.Migrations
                     b.Property<int>("CompanyId")
                         .HasColumnType("int");
 
+                    b.Property<string>("DataJson")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("DetectRawJson")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int?>("DetectVersion")
+                        .HasColumnType("int");
+
                     b.Property<int?>("DriverId")
                         .HasColumnType("int");
+
+                    b.Property<string>("ErrorMessage")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<DateOnly?>("EventDate")
+                        .HasColumnType("date");
+
+                    b.Property<decimal?>("Odometer")
+                        .HasPrecision(12, 1)
+                        .HasColumnType("decimal(12,1)");
+
+                    b.Property<decimal?>("Quantity")
+                        .HasPrecision(18, 3)
+                        .HasColumnType("decimal(18,3)");
 
                     b.Property<DateTime>("ReceivedAt")
                         .HasColumnType("datetime2");
 
+                    b.Property<string>("ReferenceNo")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
                     b.Property<int>("Status")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("SystemVersion")
+                        .HasColumnType("int");
+
+                    b.Property<string>("TypeConfidence")
+                        .HasMaxLength(10)
+                        .HasColumnType("nvarchar(10)");
+
+                    b.Property<int?>("TypeVersion")
                         .HasColumnType("int");
 
                     b.Property<int?>("VehicleId")
                         .HasColumnType("int");
 
+                    b.Property<string>("Vendor")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
                     b.HasKey("Id");
+
+                    b.HasIndex("AiPriceId");
+
+                    b.HasIndex("AiProviderId");
+
+                    b.HasIndex("AiReadAt");
+
+                    b.HasIndex("CaptureTypeId");
 
                     b.HasIndex("CapturedByUserId");
 
@@ -458,6 +567,10 @@ namespace TransLog.Web.Data.Migrations
 
                     b.HasIndex("CompanyId", "ClientKey")
                         .IsUnique();
+
+                    b.HasIndex("CompanyId", "EventDate");
+
+                    b.HasIndex("Status", "AiNextTryAt");
 
                     b.HasIndex("CompanyId", "DriverId", "CapturedAt");
 
@@ -1067,6 +1180,21 @@ namespace TransLog.Web.Data.Migrations
 
             modelBuilder.Entity("TransLog.Web.Data.Capture", b =>
                 {
+                    b.HasOne("TransLog.Web.Data.AiPrice", null)
+                        .WithMany()
+                        .HasForeignKey("AiPriceId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("TransLog.Web.Data.AiProvider", null)
+                        .WithMany()
+                        .HasForeignKey("AiProviderId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("TransLog.Web.Data.CaptureType", "CaptureType")
+                        .WithMany()
+                        .HasForeignKey("CaptureTypeId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
                     b.HasOne("TransLog.Web.Data.AppUser", null)
                         .WithMany()
                         .HasForeignKey("CapturedByUserId")
@@ -1090,6 +1218,8 @@ namespace TransLog.Web.Data.Migrations
                         .HasForeignKey("CompanyId", "VehicleId")
                         .HasPrincipalKey("CompanyId", "Id")
                         .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("CaptureType");
 
                     b.Navigation("Driver");
 
