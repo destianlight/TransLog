@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using TransLog.Web.Ai;
 using TransLog.Web.Data;
+using Capture = TransLog.Web.Data.Capture; // System.Text.RegularExpressions also has a Capture
 
 namespace TransLog.Tests;
 
