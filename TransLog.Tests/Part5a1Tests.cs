@@ -95,6 +95,21 @@ public class Part5a1Tests(TestApp app) : IClassFixture<TestApp>
     }
 
     [Fact]
+    public async Task The_AI_help_page_is_for_system_admins_and_linked_from_the_prompts()
+    {
+        var owner = await _s.CompanyWithOwnerAsync("Prompt Help Co", "owner@prompt-help.test");
+        Assert.Equal(HttpStatusCode.NotFound, (await owner.GetAsync("/sysadmin/aihelp")).StatusCode);
+
+        var admin = await _s.AdminAsync();
+        var help = await admin.GetAsync("/sysadmin/aihelp");
+        Assert.Equal(HttpStatusCode.OK, help.StatusCode);
+        var html = await help.Content.ReadAsStringAsync();
+        Assert.Contains("Global and selected companies", html);
+        Assert.Contains("{fields}", html);
+        Assert.Contains("href=\"/sysadmin/aihelp\"", await (await admin.GetAsync("/sysadmin/prompts")).Content.ReadAsStringAsync());
+    }
+
+    [Fact]
     public async Task Startup_seeds_the_six_built_in_entries_once_and_each_passes_the_rules()
     {
         var entries = await InDbAsync(db => db.CaptureTypes.AsNoTracking().Include(t => t.Companies).ToListAsync());

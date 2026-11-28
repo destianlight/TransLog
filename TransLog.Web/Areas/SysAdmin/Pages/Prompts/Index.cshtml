@@ -15,7 +15,10 @@
     <div class="container" style="max-width: 980px">
         <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-3">
             <h1 class="tl-h2 mb-0">AI prompts</h1>
-            <a class="btn btn-tl" asp-page="Edit">@Icons.Svg("plus-lg") New type</a>
+            <div class="d-flex flex-wrap gap-2">
+                <a class="btn btn-outline-secondary" asp-page="/AiHelp">@Icons.Svg("question-circle") Help</a>
+                <a class="btn btn-tl" asp-page="Edit">@Icons.Svg("plus-lg") New type</a>
+            </div>
         </div>
 
         @if (TempData["Message"] is string message)

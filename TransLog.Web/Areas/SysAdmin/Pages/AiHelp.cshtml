@@ -1,0 +1,196 @@
+@page
+@* Part 5a1: help for SysAdmins on the AI pages. 5a2 adds AI providers, prices and the AI test page. *@
+@{
+    ViewData["Title"] = "AI help";
+}
+
+<section class="tl-section">
+    <div class="container tl-help" style="max-width: 860px">
+        <p class="mb-2"><a asp-page="/Prompts/Index">&larr; AI prompts</a></p>
+        <h1 class="tl-h2 mb-2">AI help</h1>
+        <p class="text-body-secondary">How TransLog tells the AI what to read, and how to change it safely.</p>
+
+        <nav class="tl-card mb-4" aria-label="On this page">
+            <div class="fw-semibold mb-2">On this page</div>
+            <ol class="mb-0 small">
+                <li><a href="#how">How a slip is read</a></li>
+                <li><a href="#kinds">The three kinds of entry</a></li>
+                <li><a href="#placeholders">{types} and {fields}</a></li>
+                <li><a href="#fields">The field table</a></li>
+                <li><a href="#scope">Global and selected companies</a></li>
+                <li><a href="#versions">Versions, History and Restore</a></li>
+                <li><a href="#effective">Effective for company</a></li>
+                <li><a href="#tasks">Common jobs, step by step</a></li>
+                <li><a href="#refused">Why a save is refused</a></li>
+                <li><a href="#tips">Writing good prompts</a></li>
+                <li><a href="#later">What comes later</a></li>
+            </ol>
+        </nav>
+
+        <h2 id="how" class="h4 mt-5">1. How a slip is read</h2>
+        <p>Every photo is read in two AI calls. Both start with the <strong>shared system prompt</strong>, which holds the rules for every answer.</p>
+        <ol>
+            <li><strong>Step 1, detect:</strong> the <strong>type detection prompt</strong> asks which type of document the photo shows (fuel, weighbridge, odometer, receipt or one of the company's extra types), or "other".</li>
+            <li><strong>Step 2, read:</strong> the chosen <strong>capture type's prompt</strong> asks for that type's fields and gets them back as json.</li>
+        </ol>
+        <p>If step 1 says "other" or is not sure, the slip goes to review and the reviewer picks the type. The AI only fills in the data: TransLog's own checks and the reviewer decide whether it is right.</p>
+        <div class="alert alert-info small">The reading itself starts in Part 5a2. Until then you can set up and test the prompts here, but no slip is sent to the AI yet.</div>
+
+        <h2 id="kinds" class="h4 mt-5">2. The three kinds of entry</h2>
+        <div class="table-responsive">
+            <table class="table small align-middle">
+                <thead><tr><th>Kind</th><th>Key</th><th>What it does</th></tr></thead>
+                <tbody>
+                    <tr><td>Shared system prompt</td><td><code>system</code></td><td>Rules for every call: read only what is printed, null when missing, S is not 8, dates as YYYY-MM-DD, ignore camera stamps, one json answer.</td></tr>
+                    <tr><td>Type detection</td><td><code>detect</code></td><td>Step 1. Lists the company's types through <code>{types}</code> and asks for one key.</td></tr>
+                    <tr><td>Capture type</td><td><code>fuel</code>, <code>weighbridge</code>, <code>odometer</code>, <code>receipt</code>, or your own</td><td>Step 2. A description (read by step 1), a field table and the reading prompt with hints.</td></tr>
+                </tbody>
+            </table>
+        </div>
+        <p>The six built-in entries are added when the site starts if they are missing. Your changes are never overwritten. The <strong>key</strong> never changes after an entry is made; "other" cannot be used as a key.</p>
+
+        <h2 id="placeholders" class="h4 mt-5">3. {types} and {fields}</h2>
+        <p>Two words in curly brackets are replaced before the prompt goes to the AI:</p>
+        <ul>
+            <li><code>{types}</code> (detection prompt only, must be there) becomes one line per active type for that company, made from its key and description, plus "other":
+                <pre class="tl-card small mt-2 mb-2">- fuel: A fuel or diesel slip from a filling station …
+- receipt: Any other till slip, invoice or receipt …
+- other: anything else, or no document in the photo</pre>
+                So the <strong>description</strong> of a type is what step 1 uses to tell types apart. Write it as "a photo is this type when …".
+            </li>
+            <li><code>{fields}</code> (every capture type, must be there) becomes the field list from the field table plus an example answer in json:
+                <pre class="tl-card small mt-2 mb-2">Fields to read:
+- litres (number, l): Litres. Usually printed; look carefully before giving null
+- vendor (text as printed): Filling station
+…
+Answer in json exactly in this shape …
+{"fields":{"litres":{"value":123.4,"confidence":"high"}, …}}</pre>
+                Because the list comes from the field table, the prompt and the fields can never disagree. Write only the <strong>hints</strong> yourself, above <code>{fields}</code>.
+            </li>
+        </ul>
+        <p>To see a prompt exactly as the AI gets it: open a type and fold out <em>Step 2 prompt as the AI gets it</em>, or use <a href="#effective">Effective for company</a>.</p>
+
+        <h2 id="fields" class="h4 mt-5">4. The field table</h2>
+        <div class="table-responsive">
+            <table class="table small align-middle">
+                <thead><tr><th>Column</th><th>Meaning</th></tr></thead>
+                <tbody>
+                    <tr><td>Key</td><td>The name in the json answer and in reports: lower case letters, digits and _, starting with a letter (<code>slip_number</code>). Each key only once per type. Changing a key later starts a new field; old slips keep the old one.</td></tr>
+                    <tr><td>Label</td><td>What people see on the review form, and what the AI is told the field is. Make it clear ("Total amount", not "Amt").</td></tr>
+                    <tr><td>Type</td><td>Text, Number, Money (R), Date or Yes / no. Codes and registrations are always Text, even when they look like numbers.</td></tr>
+                    <tr><td>Unit</td><td>Optional: km, l, kg, R/l. Shown to the AI and on the form.</td></tr>
+                    <tr><td>Core column</td><td>Puts the value in a real column on the slip for lists and reports (from 5a2). Each one at most once per type.</td></tr>
+                    <tr><td>Required</td><td>The field should be on every slip of this type; the AI is told to look carefully, and later a missing value flags the slip.</td></tr>
+                </tbody>
+            </table>
+        </div>
+        <p class="mb-1">Core columns and the field types they accept:</p>
+        <ul class="small">
+            <li><strong>Amount</strong> (Money or Number): the total paid.</li>
+            <li><strong>Quantity</strong> (Number): litres on a fuel slip, net mass on a weighbridge ticket, tonnes on a load.</li>
+            <li><strong>Odometer</strong> (Number): the kilometre reading.</li>
+            <li><strong>Reference no</strong> (Text): the slip, ticket or invoice number used to find doubles.</li>
+            <li><strong>Vendor</strong> (Text): the seller, station or weighbridge site.</li>
+            <li><strong>Slip date</strong> (Date): the date printed on the document; lists and reports use it.</li>
+        </ul>
+        <p>Use <strong>Add field</strong> for a new row and the bin button to remove one. Empty rows are ignored when you save.</p>
+
+        <h2 id="scope" class="h4 mt-5">5. Global and selected companies</h2>
+        <p>Every entry has a scope:</p>
+        <ul>
+            <li><strong>Global:</strong> for every company. Only one Global entry per key.</li>
+            <li><strong>Selected companies:</strong> only for the companies you tick.</li>
+        </ul>
+        <p>For each key, a company gets <strong>one</strong> entry:</p>
+        <ol>
+            <li>an entry for selected companies that includes it and is on, otherwise</li>
+            <li>the Global entry, if it is on, otherwise</li>
+            <li>nothing (that type does not exist for the company).</li>
+        </ol>
+        <div class="tl-card small mb-3">
+            <div class="fw-semibold mb-1">Example</div>
+            Global <code>fuel</code> is for everyone. You make a <code>fuel</code> version for selected companies and tick ABC Transport.
+            ABC Transport now gets only that version; every other company still gets the Global one.
+            You also make a new type <code>loads</code> for ABC Transport only: it is an extra type for ABC, and nobody else sees it.
+        </div>
+        <ul>
+            <li>A company can be in only <strong>one</strong> active selected-companies entry per key, so it never gets two fuel types. Untick it on the other entry or switch that one off first.</li>
+            <li>Switching off a company's own version makes that company fall back to the Global entry.</li>
+            <li>The Global system and detection prompts can be edited but never switched off or moved off Global, or no slip could be read. Give a company its own version instead.</li>
+        </ul>
+
+        <h2 id="versions" class="h4 mt-5">6. Versions, History and Restore</h2>
+        <ul>
+            <li>Every <strong>Save as new version</strong> keeps a full copy (name, description, fields, prompt, scope, companies, on/off). Nothing is ever overwritten or deleted.</li>
+            <li><strong>History</strong> (button on the entry, or the version number in the list) shows every version, newest first. Tap one to see it.</li>
+            <li><strong>Restore this version</strong> saves the old content as a <em>new</em> version: restoring v1 when you are on v2 makes v3. The same checks as a normal save apply, so a restore can be refused if, for example, a ticked company now has another version.</li>
+            <li>Every save and restore is in the <strong>Audit log</strong> (PromptCreated, PromptUpdated, PromptRestored).</li>
+            <li>From 5a2 each slip records which versions read it, so you can compare before and after a change.</li>
+        </ul>
+
+        <h2 id="effective" class="h4 mt-5">7. Effective for company</h2>
+        <p>On the AI prompts page, pick a company and tap <strong>Show</strong>. You see the system prompt, the detection prompt with <code>{types}</code> filled in, and each capture type with <code>{fields}</code> filled in, exactly as the AI will get them for that company. Each one says <em>Global</em> or <em>For selected companies</em>. Use it after every scope change.</p>
+
+        <h2 id="tasks" class="h4 mt-5">8. Common jobs, step by step</h2>
+        <div class="tl-card mb-3">
+            <h3 class="h6">Improve a hint for everyone</h3>
+            <ol class="small mb-0">
+                <li>AI ▾ › AI prompts › tap the type (for example Fuel slip).</li>
+                <li>Change the hints above <code>{fields}</code>, or a field label.</li>
+                <li><strong>Save as new version</strong>. If it reads worse, open History and restore the old version.</li>
+            </ol>
+        </div>
+        <div class="tl-card mb-3">
+            <h3 class="h6">Give one company its own version of a type</h3>
+            <ol class="small mb-0">
+                <li>Open the Global entry (for example Weighbridge ticket).</li>
+                <li>Tap <strong>Version for selected companies</strong>: a copy opens.</li>
+                <li>Tick the company, change what it needs, Save.</li>
+                <li>Check with <strong>Effective for company</strong>.</li>
+            </ol>
+        </div>
+        <div class="tl-card mb-3">
+            <h3 class="h6">Add a new type (for example loads)</h3>
+            <ol class="small mb-0">
+                <li>AI prompts › <strong>New type</strong>.</li>
+                <li>Name "Load / proof of delivery", key <code>loads</code>.</li>
+                <li>Description: when a photo is this type ("A signed delivery note or POD for a load: client, load number, tonnes delivered").</li>
+                <li>Fields, for example <code>load_number</code> (Text, core Reference no, required), <code>tonnes</code> (Number, unit t, core Quantity), <code>delivery_date</code> (Date, core Slip date), <code>client</code> (Text, core Vendor).</li>
+                <li>Hints above <code>{fields}</code>, then choose Global or tick the companies, and Save.</li>
+            </ol>
+        </div>
+        <div class="tl-card mb-3">
+            <h3 class="h6">Stop using a type</h3>
+            <p class="small mb-0">Open it, switch <strong>On</strong> off and Save. It is left out of detection and reading for every company it was for; old slips keep it. Switch it on again any time.</p>
+        </div>
+
+        <h2 id="refused" class="h4 mt-5">9. Why a save is refused</h2>
+        <p>Nothing is saved when any of these is true; the reasons show in red at the top of the form.</p>
+        <ul class="small">
+            <li>The key is not lower case letters, digits and _ (2 to 40), or it is "system", "detect" or "other" on a type.</li>
+            <li>There is already a Global entry with that key.</li>
+            <li>A ticked company already has an active selected-companies entry with that key.</li>
+            <li>Selected companies is chosen but no company is ticked.</li>
+            <li>The detection prompt has no <code>{types}</code>; a type prompt has no <code>{fields}</code>; the system or detection prompt does not contain the word json.</li>
+            <li>A type has no description or no fields; a field key is used twice or badly written; a field has no label; a core column is used twice or does not fit the field's type.</li>
+            <li>You tried to switch off, or move off Global, the Global system or detection prompt.</li>
+        </ul>
+
+        <h2 id="tips" class="h4 mt-5">10. Writing good prompts</h2>
+        <ul>
+            <li><strong>Hints beat rules.</strong> Say where things are on the slip: "Vehicle is often the pump id; the registration is under Notes".</li>
+            <li><strong>Keep separate numbers separate.</strong> Two fields with two hints ("reference_no and slip_number are different numbers") stop the AI copying one into the other.</li>
+            <li><strong>Never ask the AI to work things out</strong> (VAT, net mass, litres × price). TransLog checks the sums itself (Part 5c); the AI must only read.</li>
+            <li><strong>Codes stay text.</strong> The AI mixes up S and 8, O and 0. The system prompt warns it, and TransLog's checks and the reviewer catch the rest; a confident "high" is not proof.</li>
+            <li><strong>Descriptions should differ.</strong> If two types sound alike, step 1 will mix them up. Say what makes each one different ("not a fuel slip").</li>
+            <li><strong>Change one thing at a time</strong> and test it on a few real slips (AI test page, from 5a2). If it gets worse, restore.</li>
+            <li><strong>Keep it short.</strong> Every word is paid for on every slip; the system prompt and photo are cached, the rest is not.</li>
+        </ul>
+
+        <h2 id="later" class="h4 mt-5">11. What comes later</h2>
+        <ul class="small">
+            <li><strong>5a2:</strong> the AI actually reads slips with these prompts; AI providers and keys, prices and cost per slip, and an AI test page to try a photo with any company's prompts.</li>
+            <li><strong>Part 7:</strong> the full type editor (choice lists, vehicle and driver pickers), companies' own types, and photo checks such as "Is an open diesel cap visible?".</li>
+        </ul>
+    </div>
+</section>
