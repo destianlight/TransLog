@@ -126,7 +126,7 @@ public sealed record CaptureSaveResult(bool Ok, int? CaptureId = null, bool Dupl
 /// Saves uploaded photos: checks the file, writes it and its preview to the file store, and adds the Capture with its image.
 /// The same ClientKey twice returns the first capture, so retries from the phone are safe.
 /// </summary>
-public class CaptureService(AppDbContext db, IFileStore files, ILogger<CaptureService> log, TransLog.Web.Ai.AiQueue aiQueue, CaptureLive live)
+public class CaptureService(AppDbContext db, IFileStore files, ILogger<CaptureService> log, TransLog.Web.Ai.AiQueue aiQueue, CaptureLive live, IConfiguration config)
 {
     /// <summary>A driver sends a photo from the camera page. The vehicle is the driver's linked vehicle at that moment (or none).</summary>
     public async Task<CaptureSaveResult> SaveForDriverAsync(int userId, CaptureUpload upload)
@@ -209,6 +209,8 @@ public class CaptureService(AppDbContext db, IFileStore files, ILogger<CaptureSe
             CapturedAt = capturedAt,
             ReceivedAt = now,
             Status = CaptureStatus.Processing,
+            // Temporary (5b testing): wait before reading so the live list can be seen. Setting Ai:Worker:ReadDelaySeconds.
+            AiNextTryAt = ReadDelay() is { } wait ? now + wait : null,
             Images =
             [
                 new CaptureImage
@@ -250,13 +252,23 @@ public class CaptureService(AppDbContext db, IFileStore files, ILogger<CaptureSe
             throw;
         }
 
-        aiQueue.Wake(); // Part 5a2b2: start reading at once
+        if (ReadDelay() is { } delay)
+            _ = Task.Delay(delay + TimeSpan.FromSeconds(1)).ContinueWith(_ => aiQueue.Wake(), TaskScheduler.Default);
+        else
+            aiQueue.Wake(); // Part 5a2b2: start reading at once
         // Part 5b: open lists show "1 new slip".
         var driverUserId = driverId is int d
             ? await db.Drivers.IgnoreQueryFilters().Where(x => x.Id == d && x.CompanyId == companyId).Select(x => x.UserId).FirstOrDefaultAsync()
             : null;
         await live.AddedAsync(companyId, capture.Id, userId, driverUserId);
         return new CaptureSaveResult(true, capture.Id);
+    }
+
+    /// <summary>Seconds to wait after an upload before the AI reads it (default 0 = at once).</summary>
+    private TimeSpan? ReadDelay()
+    {
+        var seconds = Math.Clamp(config.GetValue("Ai:Worker:ReadDelaySeconds", 0), 0, 600);
+        return seconds == 0 ? null : TimeSpan.FromSeconds(seconds);
     }
 
     private Task<int?> FindAsync(Guid clientKey) =>

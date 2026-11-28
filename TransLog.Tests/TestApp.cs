@@ -40,6 +40,8 @@ public sealed class TestApp : WebApplicationFactory<Program>, IAsyncLifetime
         builder.UseSetting("Storage:Root", FilesRoot);
         // Part 5a2b2: no background reading in ordinary tests (FakeAiWorkerApp switches it on with a fake AI).
         builder.UseSetting("Ai:Worker:Enabled", "false");
+        // The live site may wait before reading (appsettings.json); tests read at once.
+        builder.UseSetting("Ai:Worker:ReadDelaySeconds", "0");
     }
 
     public Task InitializeAsync()
