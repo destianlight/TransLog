@@ -60,8 +60,34 @@ public sealed class PromptSet
         return new PromptSet(system?.Kind == PromptKind.System ? system : null, detect?.Kind == PromptKind.Detect ? detect : null, types);
     }
 
-    /// <summary>The step 1 prompt with {types} filled in: one line per type ("- key: description") plus "other".</summary>
-    public string DetectText() => DetectPrompt is null ? "" : DetectPrompt.Prompt.Replace(PromptRules.TypesPlaceholder, TypesList(), StringComparison.Ordinal);
+    /// <summary>The json example step 1 is asked for when its prompt has none (DeepSeek's json mode needs the word and an example).</summary>
+    public const string DetectExample = "Answer in json like this example:\n{\"type\": \"fuel\", \"confidence\": \"high\", \"description\": \"Diesel slip from Engen Vryburg, 412 litres\"}";
+
+    /// <summary>The shared system prompt as sent: a json rule is added when the text has none.</summary>
+    public string SystemText()
+    {
+        if (SystemPrompt is null)
+            return "";
+        var text = SystemPrompt.Prompt;
+        return text.Contains("json", StringComparison.OrdinalIgnoreCase)
+            ? text
+            : text + "\n\nAnswer with one json object only, in exactly the shape of the example you are given.";
+    }
+
+    /// <summary>
+    /// The step 1 prompt as sent: {types} becomes one line per type ("- key: description") plus "other".
+    /// Without {types} the list is added at the end; without the word json the example answer is added too.
+    /// </summary>
+    public string DetectText()
+    {
+        if (DetectPrompt is null)
+            return "";
+        var text = DetectPrompt.Prompt;
+        text = text.Contains(PromptRules.TypesPlaceholder, StringComparison.Ordinal)
+            ? text.Replace(PromptRules.TypesPlaceholder, TypesList(), StringComparison.Ordinal)
+            : text + "\n\nThe document types (key: when to choose it):\n" + TypesList() + "\n\nChoose the one key that fits best.";
+        return text.Contains("json", StringComparison.OrdinalIgnoreCase) ? text : text + "\n\n" + DetectExample;
+    }
 
     public string TypesList()
     {
@@ -72,9 +98,14 @@ public sealed class PromptSet
         return sb.ToString();
     }
 
-    /// <summary>A type's step 2 prompt with {fields} filled in: the field list and an example answer in json.</summary>
-    public static string TypeText(CaptureType type) =>
-        type.Prompt.Replace(PromptRules.FieldsPlaceholder, FieldsText(PromptRules.FieldsFromJson(type.FieldsJson)), StringComparison.Ordinal);
+    /// <summary>A type's step 2 prompt as sent: {fields} becomes the field list and an example answer in json (added at the end when missing).</summary>
+    public static string TypeText(CaptureType type)
+    {
+        var fields = FieldsText(PromptRules.FieldsFromJson(type.FieldsJson));
+        return type.Prompt.Contains(PromptRules.FieldsPlaceholder, StringComparison.Ordinal)
+            ? type.Prompt.Replace(PromptRules.FieldsPlaceholder, fields, StringComparison.Ordinal)
+            : type.Prompt.TrimEnd() + "\n\n" + fields;
+    }
 
     public static string FieldsText(List<PromptField> fields)
     {

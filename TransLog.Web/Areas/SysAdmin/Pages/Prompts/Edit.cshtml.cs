@@ -17,8 +17,6 @@ public class EditModel(AppDbContext db, PromptService prompts) : PageModel
 
         Hints:
         - 
-
-        {fields}
         """;
 
     [BindProperty]
@@ -43,6 +41,12 @@ public class EditModel(AppDbContext db, PromptService prompts) : PageModel
     public bool IsGlobalEntry { get; private set; }
 
     public string? Preview { get; private set; }
+
+    /// <summary>The whole entry as one block of text for the Copy box (existing entries only).</summary>
+    public string? CopyBlock { get; private set; }
+
+    /// <summary>Set after Fill in: the form holds pasted text that is not saved yet.</summary>
+    public string? FillNote { get; private set; }
 
     public List<(int Id, string Name, bool IsActive)> Companies { get; private set; } = [];
 
@@ -118,6 +122,56 @@ public class EditModel(AppDbContext db, PromptService prompts) : PageModel
         return RedirectToPage(new { id = result.Entry.Id, from = (int?)null });
     }
 
+    /// <summary>
+    /// Paste box: a block (from Copy, or written by Claude) fills name, description, fields and prompt; any other text
+    /// replaces only the prompt. Nothing is saved: the page shows the filled form to check and Save.
+    /// </summary>
+    public async Task<IActionResult> OnPostFillAsync(int? id, int? from, string? paste)
+    {
+        ModelState.Clear();
+        CaptureType? entry = null, source = null;
+        if (id is int existingId)
+        {
+            entry = await prompts.FindAsync(existingId);
+            if (entry is null)
+                return NotFound();
+            Form = PromptService.InputFrom(entry);
+        }
+        else if (from is int fromId)
+        {
+            source = await prompts.FindAsync(fromId);
+            if (source is null)
+                return NotFound();
+            Form = PromptService.InputFrom(source);
+            Form.Scope = PromptScope.SelectedCompanies;
+            Form.CompanyIds = [];
+            Form.IsActive = true;
+        }
+        else
+            Form = new PromptInput();
+
+        var kind = entry?.Kind ?? source?.Kind ?? PromptKind.Type;
+        if (string.IsNullOrWhiteSpace(paste))
+            FillNote = "Nothing was pasted.";
+        else if (PromptBlock.Read(paste) is PromptBlockData block)
+        {
+            var filled = PromptBlock.Apply(block, Form, kind);
+            if (entry is null && source is null && !string.IsNullOrWhiteSpace(block.Key))
+                Key = block.Key.Trim();
+            FillNote = "Filled in: " + string.Join(", ", filled) + ". Check it, then tap Save as new version.";
+        }
+        else
+        {
+            Form.Prompt = paste.Trim();
+            FillNote = "The pasted text is now the prompt. Check it, then tap Save as new version.";
+        }
+
+        if (kind == PromptKind.Type && Form.Fields.Count == 0)
+            Form.Fields.Add(new PromptField());
+        await LoadAsync(entry, source);
+        return Page();
+    }
+
     private async Task LoadAsync(CaptureType? entry, CaptureType? source)
     {
         Companies = (await db.Companies.AsNoTracking().OrderBy(c => c.Name).Select(c => new { c.Id, c.Name, c.IsActive }).ToListAsync())
@@ -133,6 +187,7 @@ public class EditModel(AppDbContext db, PromptService prompts) : PageModel
             IsGlobalEntry = entry.Scope == PromptScope.Global;
             if (entry.Kind == PromptKind.Type)
                 Preview = PromptSet.TypeText(entry);
+            CopyBlock = PromptBlock.Write(entry);
         }
         else if (source is not null)
         {

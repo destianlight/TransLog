@@ -33,7 +33,7 @@
                 <p class="small mb-1" data-effective="system">
                     <a asp-page="Edit" asp-route-id="@sys.Id">@sys.Name</a> · @PromptSet.VersionLabel(sys.CurrentVersion) · @EffectiveModel.ScopeLabel(sys)
                 </p>
-                <pre class="tl-card small" style="white-space: pre-wrap">@sys.Prompt</pre>
+                <pre class="tl-card small" style="white-space: pre-wrap">@ps.SystemText()</pre>
             }
             else
             {

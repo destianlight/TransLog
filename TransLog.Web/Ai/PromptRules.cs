@@ -123,7 +123,45 @@ public static partial class PromptRules
                 Core = string.IsNullOrWhiteSpace(f.Core) ? null : f.Core.Trim(),
             })
             .ToList();
+
+        // A field without a key gets one made from its label ("Load number" → load_number), kept unique.
+        var used = input.Fields.Where(f => f.Key.Length > 0).Select(f => f.Key).ToHashSet(StringComparer.Ordinal);
+        foreach (var f in input.Fields.Where(f => f.Key.Length == 0))
+        {
+            var key = MakeKey(f.Label, 1);
+            var n = 2;
+            while (!used.Add(key))
+                key = Fit(MakeKey(f.Label, 1), "_" + (n++).ToString(System.Globalization.CultureInfo.InvariantCulture));
+            f.Key = key;
+        }
     }
+
+    /// <summary>
+    /// A key from a name or label: lower case letters, digits and _ ("Load / proof of delivery" → load_proof_of_delivery).
+    /// Starts with a letter (an "x_" is put in front otherwise); at least <paramref name="minLength"/> + 1 characters; at most 40.
+    /// </summary>
+    public static string MakeKey(string? text, int minLength = 1)
+    {
+        var sb = new System.Text.StringBuilder();
+        foreach (var ch in (text ?? "").Trim().ToLowerInvariant())
+        {
+            if (ch is >= 'a' and <= 'z' or >= '0' and <= '9')
+                sb.Append(ch);
+            else if (sb.Length > 0 && sb[^1] != '_')
+                sb.Append('_');
+        }
+        var key = sb.ToString().Trim('_');
+        if (key.Length == 0)
+            key = "field";
+        if (key[0] is < 'a' or > 'z')
+            key = "x_" + key;
+        if (key.Length <= minLength)
+            key += "_1";
+        return key.Length > 40 ? key[..40].TrimEnd('_') : key;
+    }
+
+    private static string Fit(string key, string suffix) =>
+        (key.Length + suffix.Length > 40 ? key[..(40 - suffix.Length)] : key) + suffix;
 
     /// <summary>
     /// Checks one entry. <paramref name="lockedGlobal"/> is true for the existing global system and detect entries:
@@ -145,18 +183,9 @@ public static partial class PromptRules
         if (input.Description is { Length: > 1000 })
             errors.Add(new("Description", "The description can have at most 1000 characters."));
 
+        // {types}, {fields} and the word json are optional since the 5a1 fix: PromptSet adds what is missing.
         if (input.Prompt.Length == 0)
             errors.Add(new("Prompt", "Enter the prompt text."));
-        else
-        {
-            // A type prompt gets the word from {fields}, which always ends with the example answer in json.
-            if (kind != PromptKind.Type && !input.Prompt.Contains("json", StringComparison.OrdinalIgnoreCase))
-                errors.Add(new("Prompt", "The prompt must contain the word \"json\" (the AI's json mode needs it)."));
-            if (kind == PromptKind.Detect && !input.Prompt.Contains(TypesPlaceholder, StringComparison.Ordinal))
-                errors.Add(new("Prompt", $"The detection prompt must contain {TypesPlaceholder}, where the company's types are filled in."));
-            if (kind == PromptKind.Type && !input.Prompt.Contains(FieldsPlaceholder, StringComparison.Ordinal))
-                errors.Add(new("Prompt", $"A type prompt must contain {FieldsPlaceholder}, where the field list and the example answer are filled in."));
-        }
 
         if (input.Scope == PromptScope.SelectedCompanies && input.CompanyIds.Count == 0)
             errors.Add(new("CompanyIds", "Tick at least one company, or choose Global."));

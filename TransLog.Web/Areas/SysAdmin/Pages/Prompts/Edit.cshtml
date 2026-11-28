@@ -36,6 +36,34 @@
             </div>
         }
 
+        @if (Model.FillNote is string note)
+        {
+            <div class="alert alert-warning" data-fill-note>@note</div>
+        }
+
+        <div class="d-flex flex-wrap gap-2 mb-3">
+            <details class="tl-card flex-grow-1" open="@(Model.Id is null && Model.FillNote is null)">
+                <summary class="fw-semibold">@Icons.Svg("cloud-arrow-up") Paste</summary>
+                <form method="post" asp-page-handler="Fill" asp-route-id="@Model.Id" asp-route-from="@Model.Source?.Id" class="mt-2">
+                    <textarea name="paste" class="form-control font-monospace small mb-2" rows="5" spellcheck="false"
+                              placeholder="Paste a block copied from TransLog or written by Claude. Plain text replaces only the prompt."></textarea>
+                    <button type="submit" class="btn btn-sm btn-outline-secondary">Fill in</button>
+                    <span class="small text-body-secondary ms-2">Fills the form below; nothing is saved until you tap Save.</span>
+                </form>
+            </details>
+            @if (Model.CopyBlock is not null)
+            {
+                <details class="tl-card flex-grow-1" data-share>
+                    <summary class="fw-semibold">@Icons.Svg("journal-text") Copy</summary>
+                    <p class="small text-body-secondary mt-2 mb-2">The saved version as one block: send it to Claude to improve, then paste the answer back here.</p>
+                    <textarea class="form-control font-monospace small mb-2" rows="5" readonly data-share-text data-copy-block>@Model.CopyBlock</textarea>
+                    <button type="button" class="btn btn-sm btn-outline-secondary" data-share-copy>Copy</button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary d-none" data-share-send>Share</button>
+                    <span class="small text-success d-none" data-share-done>Copied.</span>
+                </details>
+            }
+        </div>
+
         <form method="post" class="tl-card" data-tl-prompt-form>
             <div asp-validation-summary="ModelOnly" class="alert alert-danger small" role="alert"></div>
 
@@ -53,8 +81,8 @@
                     }
                     else
                     {
-                        <input asp-for="Key" class="form-control font-monospace" maxlength="40" autocapitalize="none" spellcheck="false" placeholder="loads" />
-                        <div class="form-text">Lower case letters, digits and _, for example <code>loads</code>. Fixed after saving.</div>
+                        <input asp-for="Key" class="form-control font-monospace" maxlength="40" autocapitalize="none" spellcheck="false" placeholder="made from the name" data-tl-entry-key />
+                        <div class="form-text">Leave it empty to make one from the name. Fixed after saving.</div>
                     }
                 </div>
             </div>
@@ -72,8 +100,8 @@
             {
                 <h2 class="h5 mt-4">Fields</h2>
                 <p class="small text-body-secondary mb-2">
-                    What the AI reads from this type. <strong>Core column</strong> puts the value in a real column for reports
-                    (each core column at most once). Empty rows are ignored.
+                    What the AI reads from this type: a label and a type each. <strong>More</strong> has the key (made from the label),
+                    unit, core column for reports and required. Empty rows are ignored.
                 </p>
                 <div data-tl-fields>
                     @for (var i = 0; i < Model.Form.Fields.Count; i++)
@@ -93,15 +121,15 @@
                 <div class="form-text">
                     @if (Model.Kind == PromptKind.Detect)
                     {
-                        <span>Must contain <code>{types}</code> (the company's types) and the word json with an example answer.</span>
+                        <span>The company's types are added at <code>{types}</code>, or at the end when it is not there.</span>
                     }
                     else if (isType)
                     {
-                        <span>Must contain <code>{fields}</code>: it becomes the field list and an example answer in json.</span>
+                        <span>Write the hints in plain words. The field list and the json example are added at <code>{fields}</code>, or at the end.</span>
                     }
                     else
                     {
-                        <span>Must contain the word json.</span>
+                        <span>Rules for every AI call, in plain words.</span>
                     }
                 </div>
             </div>

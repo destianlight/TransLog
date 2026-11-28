@@ -53,22 +53,22 @@
         <p>The six built-in entries are added when the site starts if they are missing. Your changes are never overwritten. The <strong>key</strong> never changes after an entry is made; "other" cannot be used as a key.</p>
 
         <h2 id="placeholders" class="h4 mt-5">3. {types} and {fields}</h2>
-        <p>Two words in curly brackets are replaced before the prompt goes to the AI:</p>
+        <p>You can write every prompt in plain words: TransLog adds the list of types, the list of fields and the json instruction by itself. If you want them somewhere in the middle of your text, put these two words where they should go:</p>
         <ul>
-            <li><code>{types}</code> (detection prompt only, must be there) becomes one line per active type for that company, made from its key and description, plus "other":
+            <li><code>{types}</code> (detection prompt; added at the end when missing) becomes one line per active type for that company, made from its key and description, plus "other":
                 <pre class="tl-card small mt-2 mb-2">- fuel: A fuel or diesel slip from a filling station …
 - receipt: Any other till slip, invoice or receipt …
 - other: anything else, or no document in the photo</pre>
                 So the <strong>description</strong> of a type is what step 1 uses to tell types apart. Write it as "a photo is this type when …".
             </li>
-            <li><code>{fields}</code> (every capture type, must be there) becomes the field list from the field table plus an example answer in json:
+            <li><code>{fields}</code> (capture types; added at the end when missing) becomes the field list from the field table plus an example answer in json:
                 <pre class="tl-card small mt-2 mb-2">Fields to read:
 - litres (number, l): Litres. Usually printed; look carefully before giving null
 - vendor (text as printed): Filling station
 …
 Answer in json exactly in this shape …
 {"fields":{"litres":{"value":123.4,"confidence":"high"}, …}}</pre>
-                Because the list comes from the field table, the prompt and the fields can never disagree. Write only the <strong>hints</strong> yourself, above <code>{fields}</code>.
+                Because the list comes from the field table, the prompt and the fields can never disagree. Write only the <strong>hints</strong> yourself.
             </li>
         </ul>
         <p>To see a prompt exactly as the AI gets it: open a type and fold out <em>Step 2 prompt as the AI gets it</em>, or use <a href="#effective">Effective for company</a>.</p>
@@ -78,7 +78,7 @@ Answer in json exactly in this shape …
             <table class="table small align-middle">
                 <thead><tr><th>Column</th><th>Meaning</th></tr></thead>
                 <tbody>
-                    <tr><td>Key</td><td>The name in the json answer and in reports: lower case letters, digits and _, starting with a letter (<code>slip_number</code>). Each key only once per type. Changing a key later starts a new field; old slips keep the old one.</td></tr>
+                    <tr><td>Key</td><td>Under <strong>More</strong>. The name in the json answer and in reports, made from the label when you leave it empty ("Slip number" → <code>slip_number</code>). Each key only once per type. Changing a key later starts a new field; old slips keep the old one.</td></tr>
                     <tr><td>Label</td><td>What people see on the review form, and what the AI is told the field is. Make it clear ("Total amount", not "Amt").</td></tr>
                     <tr><td>Type</td><td>Text, Number, Money (R), Date or Yes / no. Codes and registrations are always Text, even when they look like numbers.</td></tr>
                     <tr><td>Unit</td><td>Optional: km, l, kg, R/l. Shown to the AI and on the form.</td></tr>
@@ -135,11 +135,21 @@ Answer in json exactly in this shape …
         <p>On the AI prompts page, pick a company and tap <strong>Show</strong>. You see the system prompt, the detection prompt with <code>{types}</code> filled in, and each capture type with <code>{fields}</code> filled in, exactly as the AI will get them for that company. Each one says <em>Global</em> or <em>For selected companies</em>. Use it after every scope change.</p>
 
         <h2 id="tasks" class="h4 mt-5">8. Common jobs, step by step</h2>
+        <div class="tl-card mb-3" id="paste">
+            <h3 class="h6">Make or improve an entry with Claude (copy and paste)</h3>
+            <ol class="small mb-0">
+                <li><strong>New type:</strong> ask Claude in the TransLog chat for "a TransLog prompt block for …" (for example loads). Copy its answer.</li>
+                <li><strong>Improve one:</strong> open the entry, fold out <strong>Copy</strong> and tap Copy (or Share). Paste it to Claude with what goes wrong ("it mixes up the ticket and order number"), and copy its answer.</li>
+                <li>Open the entry (or <strong>New type</strong>), fold out <strong>Paste</strong>, paste the answer and tap <strong>Fill in</strong>. Name, description, fields and prompt are filled; text around the block (a chat message) is ignored.</li>
+                <li>Check the form, choose the scope, and tap <strong>Save as new version</strong>. If it reads worse, restore the old version in History.</li>
+            </ol>
+            <p class="small text-body-secondary mt-2 mb-0">Plain text that is not a block only replaces the prompt. Scope, companies and on/off are never in a block: they stay as set on the page.</p>
+        </div>
         <div class="tl-card mb-3">
             <h3 class="h6">Improve a hint for everyone</h3>
             <ol class="small mb-0">
                 <li>AI ▾ › AI prompts › tap the type (for example Fuel slip).</li>
-                <li>Change the hints above <code>{fields}</code>, or a field label.</li>
+                <li>Change the hints, or a field label.</li>
                 <li><strong>Save as new version</strong>. If it reads worse, open History and restore the old version.</li>
             </ol>
         </div>
@@ -158,8 +168,8 @@ Answer in json exactly in this shape …
                 <li>AI prompts › <strong>New type</strong>.</li>
                 <li>Name "Load / proof of delivery", key <code>loads</code>.</li>
                 <li>Description: when a photo is this type ("A signed delivery note or POD for a load: client, load number, tonnes delivered").</li>
-                <li>Fields, for example <code>load_number</code> (Text, core Reference no, required), <code>tonnes</code> (Number, unit t, core Quantity), <code>delivery_date</code> (Date, core Slip date), <code>client</code> (Text, core Vendor).</li>
-                <li>Hints above <code>{fields}</code>, then choose Global or tick the companies, and Save.</li>
+                <li>Fields, for example "Load number" (Text; under More: core Reference no, required), "Tonnes delivered" (Number, unit t, core Quantity), "Delivery date" (Date, core Slip date), "Client" (Text, core Vendor).</li>
+                <li>Hints in plain words in the prompt, then choose Global or tick the companies, and Save. Easier still: paste a block from Claude (above).</li>
             </ol>
         </div>
         <div class="tl-card mb-3">
@@ -170,11 +180,10 @@ Answer in json exactly in this shape …
         <h2 id="refused" class="h4 mt-5">9. Why a save is refused</h2>
         <p>Nothing is saved when any of these is true; the reasons show in red at the top of the form.</p>
         <ul class="small">
-            <li>The key is not lower case letters, digits and _ (2 to 40), or it is "system", "detect" or "other" on a type.</li>
+            <li>The key is not lower case letters, digits and _ (2 to 40), or it is "system", "detect" or "other" on a type. (Leave it empty and one is made from the name.)</li>
             <li>There is already a Global entry with that key.</li>
             <li>A ticked company already has an active selected-companies entry with that key.</li>
             <li>Selected companies is chosen but no company is ticked.</li>
-            <li>The detection prompt has no <code>{types}</code>; a type prompt has no <code>{fields}</code>; the system or detection prompt does not contain the word json.</li>
             <li>A type has no description or no fields; a field key is used twice or badly written; a field has no label; a core column is used twice or does not fit the field's type.</li>
             <li>You tried to switch off, or move off Global, the Global system or detection prompt.</li>
         </ul>

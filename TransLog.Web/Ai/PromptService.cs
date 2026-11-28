@@ -27,8 +27,9 @@ public class PromptService(AppDbContext db, AuditLogger audit, IHttpContextAcces
 
     public async Task<PromptSaveResult> CreateAsync(string key, PromptInput input)
     {
-        key = (key ?? "").Trim().ToLowerInvariant();
         PromptRules.Tidy(input);
+        // No key typed: one is made from the name ("Load / proof of delivery" → load_proof_of_delivery).
+        key = string.IsNullOrWhiteSpace(key) ? PromptRules.MakeKey(input.Name) : key.Trim().ToLowerInvariant();
         var kind = PromptRules.KindForKey(key);
         var errors = PromptRules.Check(kind, key, input, lockedGlobal: false);
         if (errors.Count == 0)

@@ -248,14 +248,66 @@ public class Part5a1Tests(TestApp app) : IClassFixture<TestApp>
         r = await admin.PostFormAsync($"/sysadmin/prompts/edit/{system.Id}", FormFor(off));
         Assert.Contains("cannot be switched off", await r.Content.ReadAsStringAsync());
 
-        var detect = await GlobalAsync("detect");
-        var noTypes = PromptService.InputFrom(detect);
-        noTypes.Prompt = noTypes.Prompt.Replace("{types}", "", StringComparison.Ordinal);
-        r = await admin.PostFormAsync($"/sysadmin/prompts/edit/{detect.Id}", FormFor(noTypes));
-        Assert.Contains("must contain {types}", await r.Content.ReadAsStringAsync());
-
         Assert.Equal(system.CurrentVersion, (await GlobalAsync("system")).CurrentVersion);
-        Assert.Equal(detect.CurrentVersion, (await GlobalAsync("detect")).CurrentVersion);
+    }
+
+    [Fact]
+    public async Task Paste_fills_the_form_without_saving_and_copy_shows_the_block()
+    {
+        var admin = await _s.AdminAsync();
+
+        // A block as Claude would write it in a chat, with text and fences around it; no key and no {fields}.
+        const string pasted = """
+            Here is your block:
+            ```json
+            {
+              "name": "Pasted loads",
+              "description": "A signed delivery note for a load: client, load number and tonnes.",
+              "fields": [
+                { "label": "Load number", "type": "text", "core": "ReferenceNo", "required": true },
+                { "label": "Tonnes delivered", "type": "number", "unit": "t", "core": "Quantity" },
+              ],
+              "prompt": "Step 2: read this delivery note. The load number is often top right."
+            }
+            ```
+            """;
+        var fill = await Scenario.PostToAsync(admin, "/sysadmin/prompts/edit", "/sysadmin/prompts/edit?handler=Fill", new() { ["paste"] = pasted });
+        Assert.Equal(HttpStatusCode.OK, fill.StatusCode);
+        var html = await fill.Content.ReadAsStringAsync();
+        Assert.Contains("data-fill-note", html);
+        Assert.Contains("value=\"Pasted loads\"", html);
+        Assert.Contains("value=\"Tonnes delivered\"", html);
+        Assert.False(await InDbAsync(db => db.CaptureTypes.AnyAsync(t => t.Name == "Pasted loads")));
+
+        // Saving what was filled in (the key and the field keys are made from the name and labels).
+        var input = new PromptInput
+        {
+            Name = "Pasted loads",
+            Description = "A signed delivery note for a load: client, load number and tonnes.",
+            Prompt = "Step 2: read this delivery note. The load number is often top right.",
+            Scope = PromptScope.Global,
+            Fields =
+            [
+                new() { Key = "", Label = "Load number", Core = "ReferenceNo", Required = true },
+                new() { Key = "", Label = "Tonnes delivered", Type = "number", Unit = "t", Core = "Quantity" },
+            ],
+        };
+        var r = await admin.PostFormAsync("/sysadmin/prompts/edit", FormFor(input, ""));
+        Assert.Equal(HttpStatusCode.Redirect, r.StatusCode);
+        var saved = await GlobalAsync("pasted_loads");
+        Assert.Equal(new[] { "load_number", "tonnes_delivered" }, PromptRules.FieldsFromJson(saved.FieldsJson).Select(f => f.Key).ToArray());
+        Assert.Contains("Fields to read:", PromptSet.TypeText(saved));
+
+        // Copy shows the saved block; plain text pasted on the entry replaces only the prompt.
+        var edit = await (await admin.GetAsync($"/sysadmin/prompts/edit/{saved.Id}")).Content.ReadAsStringAsync();
+        Assert.Contains("data-copy-block", edit);
+        Assert.Contains("tonnes_delivered", edit);
+        fill = await Scenario.PostToAsync(admin, $"/sysadmin/prompts/edit/{saved.Id}", $"/sysadmin/prompts/edit/{saved.Id}?handler=Fill",
+            new() { ["paste"] = "Just a new prompt line." });
+        html = await fill.Content.ReadAsStringAsync();
+        Assert.Contains("Just a new prompt line.</textarea>", html);
+        Assert.Contains("value=\"Tonnes delivered\"", html);
+        Assert.Equal(1, (await GlobalAsync("pasted_loads")).CurrentVersion);
     }
 }
 
@@ -335,6 +387,65 @@ public class PromptRuleTests
         Assert.Contains(errors, e => e.Message.Contains("core column EventDate needs the type Date", StringComparison.Ordinal));
         Assert.Contains(errors, e => e.Message.Contains("unknown type", StringComparison.Ordinal));
         Assert.Contains("Add at least one field.", PromptRules.CheckFields([]).Select(e => e.Message));
+    }
+
+    [Fact]
+    public void Keys_are_made_from_names_and_labels()
+    {
+        Assert.Equal("load_proof_of_delivery", PromptRules.MakeKey("Load / proof of delivery"));
+        Assert.Equal("slip_number", PromptRules.MakeKey("  Slip number "));
+        Assert.Equal("x_2_x_tyre", PromptRules.MakeKey("2 x tyre"));
+        Assert.Equal("a_1", PromptRules.MakeKey("A"));
+        Assert.True(PromptRules.MakeKey(new string('a', 60)).Length <= 40);
+
+        var input = new PromptInput
+        {
+            Name = "x", Prompt = "p",
+            Fields = [new() { Key = "", Label = "Litres" }, new() { Key = "", Label = "litres" }, new() { Key = "odo", Label = "Odometer" }],
+        };
+        PromptRules.Tidy(input);
+        Assert.Equal(new[] { "litres", "litres_2", "odo" }, input.Fields.Select(f => f.Key).ToArray());
+    }
+
+    [Fact]
+    public void Missing_placeholders_and_json_are_added_when_the_prompt_is_sent()
+    {
+        var detect = Entry("detect");
+        detect.Prompt = "Say which document this is.";
+        detect.FieldsJson = "[]";
+        var system = Entry("system");
+        system.Prompt = "Read only what is printed.";
+        var fuel = Entry("fuel");
+        fuel.Prompt = "Step 2: read this fuel slip.";
+        var set = PromptSet.Resolve([system, detect, fuel], 1);
+
+        Assert.Contains("- fuel: When it is fuel", set.DetectText());
+        Assert.Contains("Answer in json like this example", set.DetectText());
+        Assert.Contains("json", set.SystemText());
+        Assert.StartsWith("Step 2: read this fuel slip.", PromptSet.TypeText(fuel));
+        Assert.Contains("\"fields\":{\"amount\"", PromptSet.TypeText(fuel));
+        Assert.Empty(PromptRules.Check(PromptKind.Detect, "detect", PromptService.InputFrom(detect), true));
+    }
+
+    [Fact]
+    public void A_block_round_trips_and_is_found_inside_chat_text()
+    {
+        var fuel = PromptSeeds.All().Single(s => s.Key == "fuel");
+        var block = PromptBlock.Read("Here you go:\n```json\n" + PromptBlock.Write(fuel) + "\n```\nGood luck!");
+        Assert.NotNull(block);
+        Assert.Equal("Fuel slip", block.Name);
+        Assert.Equal(fuel.Prompt, block.Prompt);
+        Assert.Equal(PromptRules.FieldsFromJson(fuel.FieldsJson).Select(f => f.Key), block.Fields!.Select(f => f.Key));
+        Assert.Contains("look under Notes", PromptBlock.Write(fuel)); // readable, not \u escapes
+
+        Assert.Null(PromptBlock.Read("Just a plain prompt without braces."));
+        Assert.Null(PromptBlock.Read("{ not json }"));
+
+        var input = new PromptInput { Name = "old", Prompt = "old" };
+        PromptBlock.Apply(new PromptBlockData { Prompt = "new", Fields = [new() { Label = "X" }] }, input, PromptKind.System);
+        Assert.Equal("new", input.Prompt);
+        Assert.Equal("old", input.Name);
+        Assert.Empty(input.Fields);
     }
 
     [Fact]
